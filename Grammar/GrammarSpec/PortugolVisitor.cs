@@ -44,23 +44,11 @@ public interface IPortugolVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitBlocoPrincipal([NotNull] PortugolParser.BlocoPrincipalContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PortugolParser.declaracoes"/>.
+	/// Visit a parse tree produced by <see cref="PortugolParser.bloco"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitDeclaracoes([NotNull] PortugolParser.DeclaracoesContext context);
-	/// <summary>
-	/// Visit a parse tree produced by <see cref="PortugolParser.declaracao"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	Result VisitDeclaracao([NotNull] PortugolParser.DeclaracaoContext context);
-	/// <summary>
-	/// Visit a parse tree produced by <see cref="PortugolParser.tipo"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	Result VisitTipo([NotNull] PortugolParser.TipoContext context);
+	Result VisitBloco([NotNull] PortugolParser.BlocoContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="PortugolParser.comandos"/>.
 	/// </summary>
@@ -68,17 +56,73 @@ public interface IPortugolVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitComandos([NotNull] PortugolParser.ComandosContext context);
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="PortugolParser.declaracaoFuncao"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitDeclaracaoFuncao([NotNull] PortugolParser.DeclaracaoFuncaoContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="PortugolParser.declaracaoProcedimento"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitDeclaracaoProcedimento([NotNull] PortugolParser.DeclaracaoProcedimentoContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="PortugolParser.listaParams"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitListaParams([NotNull] PortugolParser.ListaParamsContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="PortugolParser.param"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitParam([NotNull] PortugolParser.ParamContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="PortugolParser.tipo"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitTipo([NotNull] PortugolParser.TipoContext context);
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="PortugolParser.comando"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitComando([NotNull] PortugolParser.ComandoContext context);
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="PortugolParser.declaracaoVar"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitDeclaracaoVar([NotNull] PortugolParser.DeclaracaoVarContext context);
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="PortugolParser.atribuicao"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitAtribuicao([NotNull] PortugolParser.AtribuicaoContext context);
+	/// <summary>
+	/// Visit a parse tree produced by the <c>chamadaEscreva</c>
+	/// labeled alternative in <see cref="PortugolParser.chamadaProc"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitChamadaEscreva([NotNull] PortugolParser.ChamadaEscrevaContext context);
+	/// <summary>
+	/// Visit a parse tree produced by the <c>chamadaGenerica</c>
+	/// labeled alternative in <see cref="PortugolParser.chamadaProc"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitChamadaGenerica([NotNull] PortugolParser.ChamadaGenericaContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="PortugolParser.comandoRetorne"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitComandoRetorne([NotNull] PortugolParser.ComandoRetorneContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="PortugolParser.comandoCondicional"/>.
 	/// </summary>
@@ -92,47 +136,56 @@ public interface IPortugolVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitComandoEnquanto([NotNull] PortugolParser.ComandoEnquantoContext context);
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="PortugolParser.comandoDoEnquanto"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitComandoDoEnquanto([NotNull] PortugolParser.ComandoDoEnquantoContext context);
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="PortugolParser.comandoPara"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitComandoPara([NotNull] PortugolParser.ComandoParaContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PortugolParser.comandoSaida"/>.
+	/// Visit a parse tree produced by <see cref="PortugolParser.listaArgs"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitComandoSaida([NotNull] PortugolParser.ComandoSaidaContext context);
+	Result VisitListaArgs([NotNull] PortugolParser.ListaArgsContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PortugolParser.blocoComandos"/>.
+	/// Visit a parse tree produced by the <c>AndExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.expr"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitBlocoComandos([NotNull] PortugolParser.BlocoComandosContext context);
+	Result VisitAndExpr([NotNull] PortugolParser.AndExprContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PortugolParser.expr"/>.
+	/// Visit a parse tree produced by the <c>RelExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.expr"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitExpr([NotNull] PortugolParser.ExprContext context);
+	Result VisitRelExpr([NotNull] PortugolParser.RelExprContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PortugolParser.exprLogica"/>.
+	/// Visit a parse tree produced by the <c>OrExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.expr"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitExprLogica([NotNull] PortugolParser.ExprLogicaContext context);
+	Result VisitOrExpr([NotNull] PortugolParser.OrExprContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PortugolParser.exprRelacional"/>.
+	/// Visit a parse tree produced by <see cref="PortugolParser.relacao"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitExprRelacional([NotNull] PortugolParser.ExprRelacionalContext context);
+	Result VisitRelacao([NotNull] PortugolParser.RelacaoContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PortugolParser.exprAritmetica"/>.
+	/// Visit a parse tree produced by <see cref="PortugolParser.soma"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitExprAritmetica([NotNull] PortugolParser.ExprAritmeticaContext context);
+	Result VisitSoma([NotNull] PortugolParser.SomaContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="PortugolParser.termo"/>.
 	/// </summary>
@@ -140,45 +193,43 @@ public interface IPortugolVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitTermo([NotNull] PortugolParser.TermoContext context);
 	/// <summary>
-	/// Visit a parse tree produced by the <c>subExpr</c>
-	/// labeled alternative in <see cref="PortugolParser.fator"/>.
+	/// Visit a parse tree produced by the <c>NotExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.un"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitSubExpr([NotNull] PortugolParser.SubExprContext context);
+	Result VisitNotExpr([NotNull] PortugolParser.NotExprContext context);
 	/// <summary>
-	/// Visit a parse tree produced by the <c>negacao</c>
-	/// labeled alternative in <see cref="PortugolParser.fator"/>.
+	/// Visit a parse tree produced by the <c>NegExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.un"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitNegacao([NotNull] PortugolParser.NegacaoContext context);
+	Result VisitNegExpr([NotNull] PortugolParser.NegExprContext context);
 	/// <summary>
-	/// Visit a parse tree produced by the <c>booleano</c>
-	/// labeled alternative in <see cref="PortugolParser.fator"/>.
+	/// Visit a parse tree produced by the <c>PosExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.un"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitBooleano([NotNull] PortugolParser.BooleanoContext context);
+	Result VisitPosExpr([NotNull] PortugolParser.PosExprContext context);
 	/// <summary>
-	/// Visit a parse tree produced by the <c>numero</c>
-	/// labeled alternative in <see cref="PortugolParser.fator"/>.
+	/// Visit a parse tree produced by the <c>PrimExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.un"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitNumero([NotNull] PortugolParser.NumeroContext context);
+	Result VisitPrimExpr([NotNull] PortugolParser.PrimExprContext context);
 	/// <summary>
-	/// Visit a parse tree produced by the <c>textoLiteral</c>
-	/// labeled alternative in <see cref="PortugolParser.fator"/>.
+	/// Visit a parse tree produced by <see cref="PortugolParser.prim"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitTextoLiteral([NotNull] PortugolParser.TextoLiteralContext context);
+	Result VisitPrim([NotNull] PortugolParser.PrimContext context);
 	/// <summary>
-	/// Visit a parse tree produced by the <c>identificador</c>
-	/// labeled alternative in <see cref="PortugolParser.fator"/>.
+	/// Visit a parse tree produced by <see cref="PortugolParser.chamadaFunc"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitIdentificador([NotNull] PortugolParser.IdentificadorContext context);
+	Result VisitChamadaFunc([NotNull] PortugolParser.ChamadaFuncContext context);
 }

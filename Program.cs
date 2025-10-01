@@ -11,18 +11,30 @@ class Program
     {
         // 1) Parse de argumentos
         bool printTokens = args.Contains("--tokens");
-        bool showHelp = args.Contains("--help") || args.Contains("-h");
+        bool showHelp    = args.Contains("--help") || args.Contains("-h");
+        bool treeOnly    = args.Contains("--tree");
+        bool both        = args.Contains("--both");
+
 
         string? path = args.FirstOrDefault(a => !a.StartsWith("-"));
+
+        string? outPath = null;
+        int outIdx = Array.IndexOf(args, "--out");
+        if (outIdx >= 0 && outIdx + 1 < args.Length && !args[outIdx + 1].StartsWith("-"))
+        {
+            outPath = args[outIdx + 1];
+        }
 
         if (showHelp)
         {
             Console.WriteLine(@"Uso:
-  dotnet run [--] [--tokens] [arquivo]
+                dotnet run [--] [--tokens] [--tree|--both] [arquivo]
 
-Sem arquivo: lê da STDIN.
---tokens   : imprime CSV de tokens (Tipo,Lexema,Linha,Coluna).
-Sem --tokens: imprime a árvore sintática.");
+                Sem arquivo: lê da STDIN.
+                --tokens : imprime CSV de tokens (Tipo,Lexema,Linha,Coluna).
+                --tree   : imprime a árvore sintática (não executa).
+                --both   : imprime a árvore e depois executa.
+                Sem flags: executa o programa.");
             return 0;
         }
 
@@ -74,20 +86,45 @@ Sem --tokens: imprime a árvore sintática.");
                 // Força a tokenização
                 tokens.Fill();
 
-                // Se houve erro léxico, mostre e retorne falha
-                if (lexErr.HasErrors)
-                {
+                // Se houve erro, mostre e retorne falha
+                if (lexErr.HasErrors) {
                     lexErr.PrintTo(Console.Error, "LÉXICO");
                     return 1;
                 }
 
-                PrintTokensCsv(tokens, lexer);
+                tokens.Seek(0);
+                parser.Reset();
+                parser.BuildParseTree = false;
+                parser.programa();
+
+                if (synErr.HasErrors || parser.NumberOfSyntaxErrors > 0) {
+                    synErr.PrintTo(Console.Error, "SINTÁTICO");
+                    return 1;
+                }
+
+                if (!string.IsNullOrWhiteSpace(outPath))
+                {
+                    var dir = Path.GetDirectoryName(outPath);
+                    if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                        Directory.CreateDirectory(dir);
+
+                    using (var w = new StreamWriter(outPath, false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)))
+                    {
+                        PrintTokensCsv(w, tokens, lexer);
+                    }
+                    Console.Error.WriteLine($"[ok] CSV salvo em: {outPath}");
+                }
+                else
+                {
+                    PrintTokensCsv(Console.Out, tokens, lexer);
+                }
             }
             else
             {
                 // Parse a partir da regra inicial
                 IParseTree tree = parser.programa();
 
+                // Checa erros usual
                 bool hasErrors = lexErr.HasErrors || synErr.HasErrors || parser.NumberOfSyntaxErrors > 0;
                 if (hasErrors)
                 {
@@ -96,8 +133,17 @@ Sem --tokens: imprime a árvore sintática.");
                     return 1;
                 }
 
-                // Imprime árvore bonita
-                PrintTree(tree, parser);
+                // Decide o que fazer
+                if (treeOnly || both)
+                {
+                    PrintTree(tree, parser);
+                }
+
+                if (!treeOnly)
+                {
+                    var exec = new Exec();
+                    exec.Visit(tree);
+                }
             }
 
             return 0;
@@ -113,9 +159,9 @@ Sem --tokens: imprime a árvore sintática.");
     // Helpers
 
     // CSV de tokens: Tipo,Lexema,Linha,Coluna
-    static void PrintTokensCsv(CommonTokenStream tokenStream, PortugolLexer lexer)
+    static void PrintTokensCsv(TextWriter output, CommonTokenStream tokenStream, PortugolLexer lexer)
     {
-        Console.WriteLine("Tipo,Lexema,Linha,Coluna");
+        output.WriteLine("Tipo,Lexema,Linha,Coluna");
 
         foreach (var t in tokenStream.GetTokens())
         {
@@ -126,15 +172,13 @@ Sem --tokens: imprime a árvore sintática.");
             int linha = t.Line;
             int coluna = t.Column;
 
-            // Tipo entre aspas simples
             if (tipo.StartsWith("'") || tipo.All(ch => char.IsLetterOrDigit(ch) || ch == '_' || ch == '\''))
             {
-                Console.WriteLine($"{tipo},\"{lexema}\",{linha},{coluna}");
+                output.WriteLine($"{tipo},\"{lexema}\",{linha},{coluna}");
             }
             else
             {
-                // fallback
-                Console.WriteLine($"'{tipo}',\"{lexema}\",{linha},{coluna}");
+                output.WriteLine($"'{tipo}',\"{lexema}\",{linha},{coluna}");
             }
         }
     }

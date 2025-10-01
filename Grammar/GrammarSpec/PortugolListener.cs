@@ -51,35 +51,15 @@ public interface IPortugolListener : IParseTreeListener {
 	/// <param name="context">The parse tree.</param>
 	void ExitBlocoPrincipal([NotNull] PortugolParser.BlocoPrincipalContext context);
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="PortugolParser.declaracoes"/>.
+	/// Enter a parse tree produced by <see cref="PortugolParser.bloco"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void EnterDeclaracoes([NotNull] PortugolParser.DeclaracoesContext context);
+	void EnterBloco([NotNull] PortugolParser.BlocoContext context);
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="PortugolParser.declaracoes"/>.
+	/// Exit a parse tree produced by <see cref="PortugolParser.bloco"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void ExitDeclaracoes([NotNull] PortugolParser.DeclaracoesContext context);
-	/// <summary>
-	/// Enter a parse tree produced by <see cref="PortugolParser.declaracao"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	void EnterDeclaracao([NotNull] PortugolParser.DeclaracaoContext context);
-	/// <summary>
-	/// Exit a parse tree produced by <see cref="PortugolParser.declaracao"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	void ExitDeclaracao([NotNull] PortugolParser.DeclaracaoContext context);
-	/// <summary>
-	/// Enter a parse tree produced by <see cref="PortugolParser.tipo"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	void EnterTipo([NotNull] PortugolParser.TipoContext context);
-	/// <summary>
-	/// Exit a parse tree produced by <see cref="PortugolParser.tipo"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	void ExitTipo([NotNull] PortugolParser.TipoContext context);
+	void ExitBloco([NotNull] PortugolParser.BlocoContext context);
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="PortugolParser.comandos"/>.
 	/// </summary>
@@ -91,6 +71,56 @@ public interface IPortugolListener : IParseTreeListener {
 	/// <param name="context">The parse tree.</param>
 	void ExitComandos([NotNull] PortugolParser.ComandosContext context);
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="PortugolParser.declaracaoFuncao"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterDeclaracaoFuncao([NotNull] PortugolParser.DeclaracaoFuncaoContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="PortugolParser.declaracaoFuncao"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitDeclaracaoFuncao([NotNull] PortugolParser.DeclaracaoFuncaoContext context);
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="PortugolParser.declaracaoProcedimento"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterDeclaracaoProcedimento([NotNull] PortugolParser.DeclaracaoProcedimentoContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="PortugolParser.declaracaoProcedimento"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitDeclaracaoProcedimento([NotNull] PortugolParser.DeclaracaoProcedimentoContext context);
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="PortugolParser.listaParams"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterListaParams([NotNull] PortugolParser.ListaParamsContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="PortugolParser.listaParams"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitListaParams([NotNull] PortugolParser.ListaParamsContext context);
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="PortugolParser.param"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterParam([NotNull] PortugolParser.ParamContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="PortugolParser.param"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitParam([NotNull] PortugolParser.ParamContext context);
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="PortugolParser.tipo"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterTipo([NotNull] PortugolParser.TipoContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="PortugolParser.tipo"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitTipo([NotNull] PortugolParser.TipoContext context);
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="PortugolParser.comando"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
@@ -101,6 +131,16 @@ public interface IPortugolListener : IParseTreeListener {
 	/// <param name="context">The parse tree.</param>
 	void ExitComando([NotNull] PortugolParser.ComandoContext context);
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="PortugolParser.declaracaoVar"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterDeclaracaoVar([NotNull] PortugolParser.DeclaracaoVarContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="PortugolParser.declaracaoVar"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitDeclaracaoVar([NotNull] PortugolParser.DeclaracaoVarContext context);
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="PortugolParser.atribuicao"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
@@ -110,6 +150,40 @@ public interface IPortugolListener : IParseTreeListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	void ExitAtribuicao([NotNull] PortugolParser.AtribuicaoContext context);
+	/// <summary>
+	/// Enter a parse tree produced by the <c>chamadaEscreva</c>
+	/// labeled alternative in <see cref="PortugolParser.chamadaProc"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterChamadaEscreva([NotNull] PortugolParser.ChamadaEscrevaContext context);
+	/// <summary>
+	/// Exit a parse tree produced by the <c>chamadaEscreva</c>
+	/// labeled alternative in <see cref="PortugolParser.chamadaProc"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitChamadaEscreva([NotNull] PortugolParser.ChamadaEscrevaContext context);
+	/// <summary>
+	/// Enter a parse tree produced by the <c>chamadaGenerica</c>
+	/// labeled alternative in <see cref="PortugolParser.chamadaProc"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterChamadaGenerica([NotNull] PortugolParser.ChamadaGenericaContext context);
+	/// <summary>
+	/// Exit a parse tree produced by the <c>chamadaGenerica</c>
+	/// labeled alternative in <see cref="PortugolParser.chamadaProc"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitChamadaGenerica([NotNull] PortugolParser.ChamadaGenericaContext context);
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="PortugolParser.comandoRetorne"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterComandoRetorne([NotNull] PortugolParser.ComandoRetorneContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="PortugolParser.comandoRetorne"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitComandoRetorne([NotNull] PortugolParser.ComandoRetorneContext context);
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="PortugolParser.comandoCondicional"/>.
 	/// </summary>
@@ -131,6 +205,16 @@ public interface IPortugolListener : IParseTreeListener {
 	/// <param name="context">The parse tree.</param>
 	void ExitComandoEnquanto([NotNull] PortugolParser.ComandoEnquantoContext context);
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="PortugolParser.comandoDoEnquanto"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterComandoDoEnquanto([NotNull] PortugolParser.ComandoDoEnquantoContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="PortugolParser.comandoDoEnquanto"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitComandoDoEnquanto([NotNull] PortugolParser.ComandoDoEnquantoContext context);
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="PortugolParser.comandoPara"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
@@ -141,65 +225,71 @@ public interface IPortugolListener : IParseTreeListener {
 	/// <param name="context">The parse tree.</param>
 	void ExitComandoPara([NotNull] PortugolParser.ComandoParaContext context);
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="PortugolParser.comandoSaida"/>.
+	/// Enter a parse tree produced by <see cref="PortugolParser.listaArgs"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void EnterComandoSaida([NotNull] PortugolParser.ComandoSaidaContext context);
+	void EnterListaArgs([NotNull] PortugolParser.ListaArgsContext context);
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="PortugolParser.comandoSaida"/>.
+	/// Exit a parse tree produced by <see cref="PortugolParser.listaArgs"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void ExitComandoSaida([NotNull] PortugolParser.ComandoSaidaContext context);
+	void ExitListaArgs([NotNull] PortugolParser.ListaArgsContext context);
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="PortugolParser.blocoComandos"/>.
+	/// Enter a parse tree produced by the <c>AndExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.expr"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void EnterBlocoComandos([NotNull] PortugolParser.BlocoComandosContext context);
+	void EnterAndExpr([NotNull] PortugolParser.AndExprContext context);
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="PortugolParser.blocoComandos"/>.
+	/// Exit a parse tree produced by the <c>AndExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.expr"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void ExitBlocoComandos([NotNull] PortugolParser.BlocoComandosContext context);
+	void ExitAndExpr([NotNull] PortugolParser.AndExprContext context);
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="PortugolParser.expr"/>.
+	/// Enter a parse tree produced by the <c>RelExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.expr"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void EnterExpr([NotNull] PortugolParser.ExprContext context);
+	void EnterRelExpr([NotNull] PortugolParser.RelExprContext context);
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="PortugolParser.expr"/>.
+	/// Exit a parse tree produced by the <c>RelExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.expr"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void ExitExpr([NotNull] PortugolParser.ExprContext context);
+	void ExitRelExpr([NotNull] PortugolParser.RelExprContext context);
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="PortugolParser.exprLogica"/>.
+	/// Enter a parse tree produced by the <c>OrExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.expr"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void EnterExprLogica([NotNull] PortugolParser.ExprLogicaContext context);
+	void EnterOrExpr([NotNull] PortugolParser.OrExprContext context);
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="PortugolParser.exprLogica"/>.
+	/// Exit a parse tree produced by the <c>OrExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.expr"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void ExitExprLogica([NotNull] PortugolParser.ExprLogicaContext context);
+	void ExitOrExpr([NotNull] PortugolParser.OrExprContext context);
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="PortugolParser.exprRelacional"/>.
+	/// Enter a parse tree produced by <see cref="PortugolParser.relacao"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void EnterExprRelacional([NotNull] PortugolParser.ExprRelacionalContext context);
+	void EnterRelacao([NotNull] PortugolParser.RelacaoContext context);
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="PortugolParser.exprRelacional"/>.
+	/// Exit a parse tree produced by <see cref="PortugolParser.relacao"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void ExitExprRelacional([NotNull] PortugolParser.ExprRelacionalContext context);
+	void ExitRelacao([NotNull] PortugolParser.RelacaoContext context);
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="PortugolParser.exprAritmetica"/>.
+	/// Enter a parse tree produced by <see cref="PortugolParser.soma"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void EnterExprAritmetica([NotNull] PortugolParser.ExprAritmeticaContext context);
+	void EnterSoma([NotNull] PortugolParser.SomaContext context);
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="PortugolParser.exprAritmetica"/>.
+	/// Exit a parse tree produced by <see cref="PortugolParser.soma"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void ExitExprAritmetica([NotNull] PortugolParser.ExprAritmeticaContext context);
+	void ExitSoma([NotNull] PortugolParser.SomaContext context);
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="PortugolParser.termo"/>.
 	/// </summary>
@@ -211,75 +301,71 @@ public interface IPortugolListener : IParseTreeListener {
 	/// <param name="context">The parse tree.</param>
 	void ExitTermo([NotNull] PortugolParser.TermoContext context);
 	/// <summary>
-	/// Enter a parse tree produced by the <c>subExpr</c>
-	/// labeled alternative in <see cref="PortugolParser.fator"/>.
+	/// Enter a parse tree produced by the <c>NotExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.un"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void EnterSubExpr([NotNull] PortugolParser.SubExprContext context);
+	void EnterNotExpr([NotNull] PortugolParser.NotExprContext context);
 	/// <summary>
-	/// Exit a parse tree produced by the <c>subExpr</c>
-	/// labeled alternative in <see cref="PortugolParser.fator"/>.
+	/// Exit a parse tree produced by the <c>NotExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.un"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void ExitSubExpr([NotNull] PortugolParser.SubExprContext context);
+	void ExitNotExpr([NotNull] PortugolParser.NotExprContext context);
 	/// <summary>
-	/// Enter a parse tree produced by the <c>negacao</c>
-	/// labeled alternative in <see cref="PortugolParser.fator"/>.
+	/// Enter a parse tree produced by the <c>NegExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.un"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void EnterNegacao([NotNull] PortugolParser.NegacaoContext context);
+	void EnterNegExpr([NotNull] PortugolParser.NegExprContext context);
 	/// <summary>
-	/// Exit a parse tree produced by the <c>negacao</c>
-	/// labeled alternative in <see cref="PortugolParser.fator"/>.
+	/// Exit a parse tree produced by the <c>NegExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.un"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void ExitNegacao([NotNull] PortugolParser.NegacaoContext context);
+	void ExitNegExpr([NotNull] PortugolParser.NegExprContext context);
 	/// <summary>
-	/// Enter a parse tree produced by the <c>booleano</c>
-	/// labeled alternative in <see cref="PortugolParser.fator"/>.
+	/// Enter a parse tree produced by the <c>PosExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.un"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void EnterBooleano([NotNull] PortugolParser.BooleanoContext context);
+	void EnterPosExpr([NotNull] PortugolParser.PosExprContext context);
 	/// <summary>
-	/// Exit a parse tree produced by the <c>booleano</c>
-	/// labeled alternative in <see cref="PortugolParser.fator"/>.
+	/// Exit a parse tree produced by the <c>PosExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.un"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void ExitBooleano([NotNull] PortugolParser.BooleanoContext context);
+	void ExitPosExpr([NotNull] PortugolParser.PosExprContext context);
 	/// <summary>
-	/// Enter a parse tree produced by the <c>numero</c>
-	/// labeled alternative in <see cref="PortugolParser.fator"/>.
+	/// Enter a parse tree produced by the <c>PrimExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.un"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void EnterNumero([NotNull] PortugolParser.NumeroContext context);
+	void EnterPrimExpr([NotNull] PortugolParser.PrimExprContext context);
 	/// <summary>
-	/// Exit a parse tree produced by the <c>numero</c>
-	/// labeled alternative in <see cref="PortugolParser.fator"/>.
+	/// Exit a parse tree produced by the <c>PrimExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.un"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void ExitNumero([NotNull] PortugolParser.NumeroContext context);
+	void ExitPrimExpr([NotNull] PortugolParser.PrimExprContext context);
 	/// <summary>
-	/// Enter a parse tree produced by the <c>textoLiteral</c>
-	/// labeled alternative in <see cref="PortugolParser.fator"/>.
+	/// Enter a parse tree produced by <see cref="PortugolParser.prim"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void EnterTextoLiteral([NotNull] PortugolParser.TextoLiteralContext context);
+	void EnterPrim([NotNull] PortugolParser.PrimContext context);
 	/// <summary>
-	/// Exit a parse tree produced by the <c>textoLiteral</c>
-	/// labeled alternative in <see cref="PortugolParser.fator"/>.
+	/// Exit a parse tree produced by <see cref="PortugolParser.prim"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void ExitTextoLiteral([NotNull] PortugolParser.TextoLiteralContext context);
+	void ExitPrim([NotNull] PortugolParser.PrimContext context);
 	/// <summary>
-	/// Enter a parse tree produced by the <c>identificador</c>
-	/// labeled alternative in <see cref="PortugolParser.fator"/>.
+	/// Enter a parse tree produced by <see cref="PortugolParser.chamadaFunc"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void EnterIdentificador([NotNull] PortugolParser.IdentificadorContext context);
+	void EnterChamadaFunc([NotNull] PortugolParser.ChamadaFuncContext context);
 	/// <summary>
-	/// Exit a parse tree produced by the <c>identificador</c>
-	/// labeled alternative in <see cref="PortugolParser.fator"/>.
+	/// Exit a parse tree produced by <see cref="PortugolParser.chamadaFunc"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void ExitIdentificador([NotNull] PortugolParser.IdentificadorContext context);
+	void ExitChamadaFunc([NotNull] PortugolParser.ChamadaFuncContext context);
 }

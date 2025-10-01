@@ -55,7 +55,7 @@ public partial class PortugolBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// <return>The visitor result.</return>
 	public virtual Result VisitBlocoPrincipal([NotNull] PortugolParser.BlocoPrincipalContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PortugolParser.declaracoes"/>.
+	/// Visit a parse tree produced by <see cref="PortugolParser.bloco"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -63,27 +63,7 @@ public partial class PortugolBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitDeclaracoes([NotNull] PortugolParser.DeclaracoesContext context) { return VisitChildren(context); }
-	/// <summary>
-	/// Visit a parse tree produced by <see cref="PortugolParser.declaracao"/>.
-	/// <para>
-	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
-	/// on <paramref name="context"/>.
-	/// </para>
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	public virtual Result VisitDeclaracao([NotNull] PortugolParser.DeclaracaoContext context) { return VisitChildren(context); }
-	/// <summary>
-	/// Visit a parse tree produced by <see cref="PortugolParser.tipo"/>.
-	/// <para>
-	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
-	/// on <paramref name="context"/>.
-	/// </para>
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	public virtual Result VisitTipo([NotNull] PortugolParser.TipoContext context) { return VisitChildren(context); }
+	public virtual Result VisitBloco([NotNull] PortugolParser.BlocoContext context) { return VisitChildren(context); }
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="PortugolParser.comandos"/>.
 	/// <para>
@@ -95,6 +75,56 @@ public partial class PortugolBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// <return>The visitor result.</return>
 	public virtual Result VisitComandos([NotNull] PortugolParser.ComandosContext context) { return VisitChildren(context); }
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="PortugolParser.declaracaoFuncao"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitDeclaracaoFuncao([NotNull] PortugolParser.DeclaracaoFuncaoContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="PortugolParser.declaracaoProcedimento"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitDeclaracaoProcedimento([NotNull] PortugolParser.DeclaracaoProcedimentoContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="PortugolParser.listaParams"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitListaParams([NotNull] PortugolParser.ListaParamsContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="PortugolParser.param"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitParam([NotNull] PortugolParser.ParamContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="PortugolParser.tipo"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitTipo([NotNull] PortugolParser.TipoContext context) { return VisitChildren(context); }
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="PortugolParser.comando"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
@@ -105,6 +135,16 @@ public partial class PortugolBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// <return>The visitor result.</return>
 	public virtual Result VisitComando([NotNull] PortugolParser.ComandoContext context) { return VisitChildren(context); }
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="PortugolParser.declaracaoVar"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitDeclaracaoVar([NotNull] PortugolParser.DeclaracaoVarContext context) { return VisitChildren(context); }
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="PortugolParser.atribuicao"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
@@ -114,6 +154,38 @@ public partial class PortugolBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	public virtual Result VisitAtribuicao([NotNull] PortugolParser.AtribuicaoContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>chamadaEscreva</c>
+	/// labeled alternative in <see cref="PortugolParser.chamadaProc"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitChamadaEscreva([NotNull] PortugolParser.ChamadaEscrevaContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>chamadaGenerica</c>
+	/// labeled alternative in <see cref="PortugolParser.chamadaProc"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitChamadaGenerica([NotNull] PortugolParser.ChamadaGenericaContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="PortugolParser.comandoRetorne"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitComandoRetorne([NotNull] PortugolParser.ComandoRetorneContext context) { return VisitChildren(context); }
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="PortugolParser.comandoCondicional"/>.
 	/// <para>
@@ -135,6 +207,16 @@ public partial class PortugolBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// <return>The visitor result.</return>
 	public virtual Result VisitComandoEnquanto([NotNull] PortugolParser.ComandoEnquantoContext context) { return VisitChildren(context); }
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="PortugolParser.comandoDoEnquanto"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitComandoDoEnquanto([NotNull] PortugolParser.ComandoDoEnquantoContext context) { return VisitChildren(context); }
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="PortugolParser.comandoPara"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
@@ -145,7 +227,7 @@ public partial class PortugolBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// <return>The visitor result.</return>
 	public virtual Result VisitComandoPara([NotNull] PortugolParser.ComandoParaContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PortugolParser.comandoSaida"/>.
+	/// Visit a parse tree produced by <see cref="PortugolParser.listaArgs"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -153,9 +235,10 @@ public partial class PortugolBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitComandoSaida([NotNull] PortugolParser.ComandoSaidaContext context) { return VisitChildren(context); }
+	public virtual Result VisitListaArgs([NotNull] PortugolParser.ListaArgsContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PortugolParser.blocoComandos"/>.
+	/// Visit a parse tree produced by the <c>AndExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.expr"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -163,9 +246,10 @@ public partial class PortugolBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitBlocoComandos([NotNull] PortugolParser.BlocoComandosContext context) { return VisitChildren(context); }
+	public virtual Result VisitAndExpr([NotNull] PortugolParser.AndExprContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PortugolParser.expr"/>.
+	/// Visit a parse tree produced by the <c>RelExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.expr"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -173,9 +257,10 @@ public partial class PortugolBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitExpr([NotNull] PortugolParser.ExprContext context) { return VisitChildren(context); }
+	public virtual Result VisitRelExpr([NotNull] PortugolParser.RelExprContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PortugolParser.exprLogica"/>.
+	/// Visit a parse tree produced by the <c>OrExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.expr"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -183,9 +268,9 @@ public partial class PortugolBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitExprLogica([NotNull] PortugolParser.ExprLogicaContext context) { return VisitChildren(context); }
+	public virtual Result VisitOrExpr([NotNull] PortugolParser.OrExprContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PortugolParser.exprRelacional"/>.
+	/// Visit a parse tree produced by <see cref="PortugolParser.relacao"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -193,9 +278,9 @@ public partial class PortugolBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitExprRelacional([NotNull] PortugolParser.ExprRelacionalContext context) { return VisitChildren(context); }
+	public virtual Result VisitRelacao([NotNull] PortugolParser.RelacaoContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PortugolParser.exprAritmetica"/>.
+	/// Visit a parse tree produced by <see cref="PortugolParser.soma"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -203,7 +288,7 @@ public partial class PortugolBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitExprAritmetica([NotNull] PortugolParser.ExprAritmeticaContext context) { return VisitChildren(context); }
+	public virtual Result VisitSoma([NotNull] PortugolParser.SomaContext context) { return VisitChildren(context); }
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="PortugolParser.termo"/>.
 	/// <para>
@@ -215,8 +300,8 @@ public partial class PortugolBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// <return>The visitor result.</return>
 	public virtual Result VisitTermo([NotNull] PortugolParser.TermoContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by the <c>subExpr</c>
-	/// labeled alternative in <see cref="PortugolParser.fator"/>.
+	/// Visit a parse tree produced by the <c>NotExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.un"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -224,10 +309,10 @@ public partial class PortugolBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitSubExpr([NotNull] PortugolParser.SubExprContext context) { return VisitChildren(context); }
+	public virtual Result VisitNotExpr([NotNull] PortugolParser.NotExprContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by the <c>negacao</c>
-	/// labeled alternative in <see cref="PortugolParser.fator"/>.
+	/// Visit a parse tree produced by the <c>NegExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.un"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -235,10 +320,10 @@ public partial class PortugolBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitNegacao([NotNull] PortugolParser.NegacaoContext context) { return VisitChildren(context); }
+	public virtual Result VisitNegExpr([NotNull] PortugolParser.NegExprContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by the <c>booleano</c>
-	/// labeled alternative in <see cref="PortugolParser.fator"/>.
+	/// Visit a parse tree produced by the <c>PosExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.un"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -246,10 +331,10 @@ public partial class PortugolBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitBooleano([NotNull] PortugolParser.BooleanoContext context) { return VisitChildren(context); }
+	public virtual Result VisitPosExpr([NotNull] PortugolParser.PosExprContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by the <c>numero</c>
-	/// labeled alternative in <see cref="PortugolParser.fator"/>.
+	/// Visit a parse tree produced by the <c>PrimExpr</c>
+	/// labeled alternative in <see cref="PortugolParser.un"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -257,10 +342,9 @@ public partial class PortugolBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitNumero([NotNull] PortugolParser.NumeroContext context) { return VisitChildren(context); }
+	public virtual Result VisitPrimExpr([NotNull] PortugolParser.PrimExprContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by the <c>textoLiteral</c>
-	/// labeled alternative in <see cref="PortugolParser.fator"/>.
+	/// Visit a parse tree produced by <see cref="PortugolParser.prim"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -268,10 +352,9 @@ public partial class PortugolBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitTextoLiteral([NotNull] PortugolParser.TextoLiteralContext context) { return VisitChildren(context); }
+	public virtual Result VisitPrim([NotNull] PortugolParser.PrimContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by the <c>identificador</c>
-	/// labeled alternative in <see cref="PortugolParser.fator"/>.
+	/// Visit a parse tree produced by <see cref="PortugolParser.chamadaFunc"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -279,5 +362,5 @@ public partial class PortugolBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitIdentificador([NotNull] PortugolParser.IdentificadorContext context) { return VisitChildren(context); }
+	public virtual Result VisitChamadaFunc([NotNull] PortugolParser.ChamadaFuncContext context) { return VisitChildren(context); }
 }

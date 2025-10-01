@@ -1,12 +1,56 @@
+inteiro soma(inteiro x, inteiro y)
+inicio
+    retorne x + y;
+fim
+
+real media(real x, real y)
+inicio
+    retorne (x + y) / 2;
+fim
+
+logico ehPar(inteiro n)
+inicio
+    retorne (n % 2) == 0;
+fim
+
+procedimento titulo(texto t)
+inicio
+    escreva("== ", t, " ==");
+fim
+
+procedimento logInt(texto nome, inteiro valor)
+inicio
+    escreva(nome, "=", valor);
+fim
+
+procedimento logReal(texto nome, real valor)
+inicio
+    escreva(nome, "=", valor);
+fim
+
+procedimento logTexto(texto nome, texto valor)
+inicio
+    escreva(nome, "=", valor);
+fim
+
+procedimento logLogico(texto nome, logico valor)
+inicio
+    escreva(nome, "=", valor);
+fim
+
+
 programa main()
 inicio
+    titulo("====Teste====");
+
+    // declarações básicas
     inteiro a = 10;
     real b = 2.5;
     logico flag = falso;
-    texto msg = "Demo ANTLR";
+    texto msg = "Teste";
 
     // equações matemáticas
-    inteiro c = a + 5 * 2;
+    inteiro c = soma(a, 5) * 2;
     real d = (a - 3) / b;
 
     // regras lógicas e relacionais
@@ -26,7 +70,7 @@ inicio
     inteiro i = 0;
     enquanto (i < 3) faca
     inicio
-        escreva("while i=", i);
+        escreva("while i=", i, ", ehPar=", ehPar(i));
         i = i + 1;
     fim
     fimEnquanto
@@ -38,7 +82,15 @@ inicio
     fim
     fimPara
 
-    // saída final com vários argumentos
+    // chamada de procedimentos auxiliares de log
+    logInt("a", a);
+    logReal("b", b);
+    logInt("c", c);
+    logReal("d", d);
+    logLogico("flag", flag);
+    logTexto("msg", msg);
+
+    // saída final com vários argumentos numa única linha
     escreva("a=", a, ", b=", b, ", c=", c, ", d=", d, ", flag=", flag, ", msg=", msg);
 fim
 fimPrograma
