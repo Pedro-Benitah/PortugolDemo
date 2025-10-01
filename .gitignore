@@ -1,0 +1,5 @@
+bin/
+obj/
+.vs/
+*.interp
+*.tokens
