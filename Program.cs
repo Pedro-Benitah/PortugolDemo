@@ -9,9 +9,7 @@ class Program
 {
     static int Main(string[] args)
     {
-        // -------------------------------
         // 1) Parse de argumentos
-        // -------------------------------
         bool printTokens = args.Contains("--tokens");
         bool showHelp = args.Contains("--help") || args.Contains("-h");
 
@@ -28,9 +26,7 @@ Sem --tokens: imprime a árvore sintática.");
             return 0;
         }
 
-        // -------------------------------
         // 2) Carregar entrada (arquivo ou STDIN)
-        // -------------------------------
         string inputText;
         if (!string.IsNullOrWhiteSpace(path))
         {
@@ -53,9 +49,7 @@ Sem --tokens: imprime a árvore sintática.");
             return 1;
         }
 
-        // -------------------------------
         // 3) Pipeline ANTLR
-        // -------------------------------
         var input = new AntlrInputStream(inputText);
         var lexer = new PortugolLexer(input);
 
@@ -72,9 +66,7 @@ Sem --tokens: imprime a árvore sintática.");
         parser.RemoveErrorListeners();
         parser.AddErrorListener(synErr);
 
-        // -------------------------------
         // 4) Rodar conforme o modo
-        // -------------------------------
         try
         {
             if (printTokens)
@@ -93,17 +85,14 @@ Sem --tokens: imprime a árvore sintática.");
             }
             else
             {
-                // Parse a partir da regra inicial (ajuste se a sua for outra)
+                // Parse a partir da regra inicial
                 IParseTree tree = parser.programa();
 
-                // Se houve erro léxico/sintático, reporte e falhe
                 bool hasErrors = lexErr.HasErrors || synErr.HasErrors || parser.NumberOfSyntaxErrors > 0;
                 if (hasErrors)
                 {
                     if (lexErr.HasErrors) lexErr.PrintTo(Console.Error, "LÉXICO");
                     if (synErr.HasErrors) synErr.PrintTo(Console.Error, "SINTÁTICO");
-                    // Mesmo com erros, pode imprimir árvore parcial se desejar:
-                    // PrintTree(tree, parser);
                     return 1;
                 }
 
@@ -121,9 +110,7 @@ Sem --tokens: imprime a árvore sintática.");
         }
     }
 
-    // -------------------------------
     // Helpers
-    // -------------------------------
 
     // CSV de tokens: Tipo,Lexema,Linha,Coluna
     static void PrintTokensCsv(CommonTokenStream tokenStream, PortugolLexer lexer)
@@ -139,7 +126,7 @@ Sem --tokens: imprime a árvore sintática.");
             int linha = t.Line;
             int coluna = t.Column;
 
-            // Tipo entre aspas simples quando for literal (como no seu output anterior)
+            // Tipo entre aspas simples
             if (tipo.StartsWith("'") || tipo.All(ch => char.IsLetterOrDigit(ch) || ch == '_' || ch == '\''))
             {
                 Console.WriteLine($"{tipo},\"{lexema}\",{linha},{coluna}");
@@ -152,13 +139,13 @@ Sem --tokens: imprime a árvore sintática.");
         }
     }
 
-    // Retorna um nome amigável para o token (literal quando existir, senão o simbólico)
+    // Retorna um nome para o token
     static string GetTokenDisplayName(PortugolLexer lexer, int tokenType)
     {
         var vocab = lexer.Vocabulary;
         string? literal = vocab.GetLiteralName(tokenType);
         if (!string.IsNullOrEmpty(literal))
-            return literal; // já vem com aspas simples: 'programa', '(' ...
+            return literal;
 
         string? symbolic = vocab.GetSymbolicName(tokenType);
         if (!string.IsNullOrEmpty(symbolic))
@@ -186,9 +173,7 @@ Sem --tokens: imprime a árvore sintática.");
     }
 }
 
-// -----------------------------------------
 // Error listener que acumula mensagens
-// -----------------------------------------
 class CollectingErrorListener : IAntlrErrorListener<int>, IAntlrErrorListener<IToken>
 {
     private readonly StringBuilder _sb = new StringBuilder();
