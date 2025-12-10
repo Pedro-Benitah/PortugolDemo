@@ -446,18 +446,18 @@ class LexicalAnalyzer
 class LL1Parser
 {
     private List<LexicalAnalyzer.Token> tokens;
-    private int currentPos;
     private Stack<string> stack;
     private Dictionary<(string, string), List<string>> parseTable;
     private HashSet<string> nonTerminals;
     private HashSet<string> terminals;
     private Dictionary<string, HashSet<string>> first;
     private Dictionary<string, HashSet<string>> follow;
+    private bool verbose;
 
-    public LL1Parser(List<LexicalAnalyzer.Token> tokens)
+    public LL1Parser(List<LexicalAnalyzer.Token> tokens, bool verbose = false)
     {
         this.tokens = tokens;
-        this.currentPos = 0;
+        this.verbose = verbose;
         this.stack = new Stack<string>();
         this.parseTable = new Dictionary<(string, string), List<string>>();
         this.nonTerminals = new HashSet<string>();
@@ -483,13 +483,17 @@ class LL1Parser
         };
 
         nonTerminals = new HashSet<string> {
-            "programa", "blocoPrincipal", "comandos", "comando", "simples", "estruturado",
+            "start", "programa", "topDecls", "topDecl", "funcDecl", "procDecl", "paramList", "paramListRest",
+            "blocoPrincipal", "comandos", "comando", "simples", "estruturado",
+            "simplesRest",
             "declaracao", "tipo", "atribuicao", "condicional", "senaoOpt", 
             "enquanto", "para", "passoOpt", "escreva", "listaExpr", "listaExprRest",
             "retorne", "expr", "exprOu", "exprOuRest", "exprE", "exprERest", "exprNao", 
             "exprRel", "exprRelRest", "exprAd", "exprAdRest", "exprMul", "exprMulRest", 
             "exprUn", "exprPri"
         };
+          // exprPriRest para suportar chamadas de função/expression calls: ID LPAREN listaExpr RPAREN
+          nonTerminals.Add("exprPriRest");
 
         foreach (var nt in nonTerminals)
             first[nt] = new HashSet<string>();
@@ -505,6 +509,29 @@ class LL1Parser
             changed = false;
 
             if (AddFIRST("programa", "PROGRAMA")) changed = true;
+            // start can begin with a programa or with top-level declarations
+            if (AddFIRST("start", "PROGRAMA")) changed = true;
+            if (AddFIRST("start", "INTEIRO")) changed = true;
+            if (AddFIRST("start", "REAL")) changed = true;
+            if (AddFIRST("start", "LOGICO")) changed = true;
+            if (AddFIRST("start", "TEXTO")) changed = true;
+            if (AddFIRST("start", "PROCEDIMENTO")) changed = true;
+
+            // top-level declarations
+            if (AddFIRST("topDecls", "INTEIRO")) changed = true;
+            if (AddFIRST("topDecls", "REAL")) changed = true;
+            if (AddFIRST("topDecls", "LOGICO")) changed = true;
+            if (AddFIRST("topDecls", "TEXTO")) changed = true;
+            if (AddFIRST("topDecls", "PROCEDIMENTO")) changed = true;
+            if (AddFIRST("topDecls", "ε")) changed = true;
+
+            if (AddFIRSTFromNT("funcDecl", "tipo")) changed = true;
+            if (AddFIRST("procDecl", "PROCEDIMENTO")) changed = true;
+            if (AddFIRST("paramList", "INTEIRO")) changed = true;
+            if (AddFIRST("paramList", "REAL")) changed = true;
+            if (AddFIRST("paramList", "LOGICO")) changed = true;
+            if (AddFIRST("paramList", "TEXTO")) changed = true;
+            if (AddFIRST("paramList", "ε")) changed = true;
             if (AddFIRST("blocoPrincipal", "INICIO")) changed = true;
             if (AddFIRST("comandos", "ε")) changed = true;
             if (AddFIRSTFromNT("comandos", "comando")) changed = true;
@@ -513,7 +540,10 @@ class LL1Parser
             if (AddFIRSTFromNT("comando", "estruturado")) changed = true;
 
             if (AddFIRSTFromNT("simples", "declaracao")) changed = true;
-            if (AddFIRSTFromNT("simples", "atribuicao")) changed = true;
+            // simples can start with ID followed by either EQUAL (assignment) or LPAREN (call)
+            if (AddFIRST("simples", "ID")) changed = true;
+            if (AddFIRST("simplesRest", "EQUAL")) changed = true;
+            if (AddFIRST("simplesRest", "LPAREN")) changed = true;
             if (AddFIRSTFromNT("simples", "escreva")) changed = true;
             if (AddFIRSTFromNT("simples", "retorne")) changed = true;
 
@@ -556,6 +586,7 @@ class LL1Parser
             if (AddFIRSTFromNT("exprUn", "exprPri")) changed = true;
 
             if (AddFIRST("exprPri", "ID")) changed = true;
+            if (AddFIRST("exprPriRest", "LPAREN")) changed = true;
             if (AddFIRST("exprPri", "NUM_LITERAL")) changed = true;
             if (AddFIRST("exprPri", "STRING_LITERAL")) changed = true;
             if (AddFIRST("exprPri", "BOOL_LITERAL")) changed = true;
@@ -586,11 +617,46 @@ class LL1Parser
 
     private void ComputeFOLLOW()
     {
+        // start é o símbolo inicial agora
+        follow["start"].Add("EOF");
         follow["programa"].Add("EOF");
     }
 
     private void BuildParseTable()
     {
+        // start: allows optional top-level declarations before programa
+        AddProduction("start", "PROGRAMA", new List<string> { "programa" });
+        foreach (var term in new[] { "INTEIRO", "REAL", "LOGICO", "TEXTO", "PROCEDIMENTO" })
+            AddProduction("start", term, new List<string> { "topDecls", "programa" });
+
+        // topDecls -> topDecl topDecls | ε
+        foreach (var term in new[] { "INTEIRO", "REAL", "LOGICO", "TEXTO", "PROCEDIMENTO" })
+            AddProduction("topDecls", term, new List<string> { "topDecl", "topDecls" });
+        AddProduction("topDecls", "PROGRAMA", new List<string> { "ε" });
+
+        // topDecl -> funcDecl | procDecl
+        foreach (var term in new[] { "INTEIRO", "REAL", "LOGICO", "TEXTO" })
+            AddProduction("topDecl", term, new List<string> { "funcDecl" });
+        AddProduction("topDecl", "PROCEDIMENTO", new List<string> { "procDecl" });
+
+        // funcDecl -> tipo ID LPAREN paramList RPAREN blocoPrincipal
+        AddProduction("funcDecl", "INTEIRO", new List<string> { "tipo", "ID", "LPAREN", "paramList", "RPAREN", "blocoPrincipal" });
+        AddProduction("funcDecl", "REAL", new List<string> { "tipo", "ID", "LPAREN", "paramList", "RPAREN", "blocoPrincipal" });
+        AddProduction("funcDecl", "LOGICO", new List<string> { "tipo", "ID", "LPAREN", "paramList", "RPAREN", "blocoPrincipal" });
+        AddProduction("funcDecl", "TEXTO", new List<string> { "tipo", "ID", "LPAREN", "paramList", "RPAREN", "blocoPrincipal" });
+
+        // procDecl -> PROCEDIMENTO ID LPAREN paramList RPAREN blocoPrincipal
+        AddProduction("procDecl", "PROCEDIMENTO", new List<string> { "PROCEDIMENTO", "ID", "LPAREN", "paramList", "RPAREN", "blocoPrincipal" });
+
+        // paramList -> tipo ID paramListRest | ε
+        foreach (var t in new[] { "INTEIRO", "REAL", "LOGICO", "TEXTO" })
+            AddProduction("paramList", t, new List<string> { "tipo", "ID", "paramListRest" });
+        AddProduction("paramList", "RPAREN", new List<string> { "ε" });
+
+        // paramListRest -> COMMA tipo ID paramListRest | ε
+        AddProduction("paramListRest", "COMMA", new List<string> { "COMMA", "tipo", "ID", "paramListRest" });
+        AddProduction("paramListRest", "RPAREN", new List<string> { "ε" });
+
         // programa
         AddProduction("programa", "PROGRAMA", new List<string> { "PROGRAMA", "ID", "LPAREN", "RPAREN", "blocoPrincipal", "FIMPROGRAMA" });
 
@@ -612,7 +678,12 @@ class LL1Parser
         // simples
         foreach (var term in new[] { "INTEIRO", "REAL", "LOGICO", "TEXTO" })
             AddProduction("simples", term, new List<string> { "declaracao" });
-        AddProduction("simples", "ID", new List<string> { "atribuicao" });
+        // ID pode iniciar uma atribuicao (ID = expr) ou uma chamada (ID LPAREN listaExpr RPAREN)
+        AddProduction("simples", "ID", new List<string> { "ID", "simplesRest" });
+
+        // simplesRest -> EQUAL expr | LPAREN listaExpr RPAREN
+        AddProduction("simplesRest", "EQUAL", new List<string> { "EQUAL", "expr" });
+        AddProduction("simplesRest", "LPAREN", new List<string> { "LPAREN", "listaExpr", "RPAREN" });
         AddProduction("simples", "ESCREVA", new List<string> { "escreva" });
         AddProduction("simples", "RETORNE", new List<string> { "retorne" });
 
@@ -731,7 +802,12 @@ class LL1Parser
             AddProduction("exprUn", term, new List<string> { "exprPri" });
 
         // exprPri
-        AddProduction("exprPri", "ID", new List<string> { "ID" });
+        // ID pode ser uso de variável ou chamada: ID exprPriRest
+        AddProduction("exprPri", "ID", new List<string> { "ID", "exprPriRest" });
+        // exprPriRest -> LPAREN listaExpr RPAREN | ε
+        AddProduction("exprPriRest", "LPAREN", new List<string> { "LPAREN", "listaExpr", "RPAREN" });
+        foreach (var t in new[] { "SEMI", "RPAREN", "COMMA", "ENTAO", "FACA", "ATE", "PASSO", "DE", "EQ", "NE", "LT", "LE", "GT", "GE", "PLUS", "MINUS", "STAR", "SLASH", "PERCENT", "E", "OU", "FIM", "FIMENQUANTO", "FIMPARA", "SENAO", "EOF" })
+            AddProduction("exprPriRest", t, new List<string> { "ε" });
         AddProduction("exprPri", "NUM_LITERAL", new List<string> { "NUM_LITERAL" });
         AddProduction("exprPri", "STRING_LITERAL", new List<string> { "STRING_LITERAL" });
         AddProduction("exprPri", "BOOL_LITERAL", new List<string> { "BOOL_LITERAL" });
@@ -747,11 +823,14 @@ class LL1Parser
     public void Parse()
     {
         stack.Push("EOF");
-        stack.Push("programa");
+        stack.Push("start");
 
         int tokenIdx = 0;
 
-        Console.WriteLine("\n=== ANÁLISE SINTÁTICA LL(1) ===\n");
+        if (verbose)
+        {
+            Console.WriteLine("\n=== ANÁLISE SINTÁTICA LL(1) - MODO VERBOSE ===\n");
+        }
 
         while (stack.Count > 0)
         {
@@ -788,6 +867,11 @@ class LL1Parser
             {
                 if (parseTable.TryGetValue((top, currentToken), out var production))
                 {
+                    if (verbose)
+                    {
+                        Console.WriteLine($"{top} → {string.Join(" ", production)}");
+                    }
+                    
                     stack.Pop();
                     for (int i = production.Count - 1; i >= 0; i--)
                     {
@@ -801,7 +885,5 @@ class LL1Parser
                 }
             }
         }
-
-        Console.WriteLine("✓ Análise concluída com sucesso!");
     }
 }
