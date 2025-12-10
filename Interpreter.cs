@@ -54,7 +54,7 @@ sealed class Env {
     readonly Dictionary<string,Value> vars = new(StringComparer.Ordinal);
     public Env(Env? p=null){ parent=p; }
     public bool TryGet(string id, out Value v){
-        if (vars.TryGetValue(id, out v)) return true;
+        if (vars.TryGetValue(id, out v!)) return true;
         if (parent!=null) return parent.TryGet(id, out v);
         v = Value.Void; return false;
     }

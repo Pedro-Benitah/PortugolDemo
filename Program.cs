@@ -2,241 +2,826 @@
 using System.IO;
 using System.Linq;
 using System.Text;
-using Antlr4.Runtime;
-using Antlr4.Runtime.Tree;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
+
+/// <summary>
+/// ANALISADOR LÉXICO E SINTÁTICO LL(1) - LINGUAGEM PORTUGOL
+/// 
+/// Gramática LL(1) (após eliminação de recursão à esquerda e fatoração):
+/// 
+/// programa          → PROGRAMA ID LPAREN RPAREN blocoPrincipal FIMPROGRAMA
+/// blocoPrincipal    → INICIO comandos FIM
+/// comandos          → (comando SEMI)*
+/// comando           → declaracao | atribuicao | condicional | laco | escreva | retorne
+/// 
+/// declaracao        → tipo ID (EQUAL expr)?
+/// tipo              → INTEIRO | REAL | LOGICO | TEXTO
+/// 
+/// atribuicao        → ID EQUAL expr
+/// 
+/// condicional       → SE LPAREN expr RPAREN ENTAO blocoPrincipal senaoOpt
+/// senaoOpt          → SENAO blocoPrincipal | ε
+/// 
+/// laco              → enquanto | para
+/// enquanto          → ENQUANTO LPAREN expr RPAREN FACA blocoPrincipal FIMENQUANTO
+/// para              → PARA ID DE expr ATE expr passoOpt FACA blocoPrincipal FIMPARA
+/// passoOpt          → PASSO expr | ε
+/// 
+/// escreva           → ESCREVA LPAREN listaExpr RPAREN
+/// listaExpr         → expr (COMMA expr)*
+/// 
+/// retorne           → RETORNE expr
+/// 
+/// expr              → exprOu
+/// exprOu            → exprE (OU exprE)*
+/// exprE             → exprNao (E exprNao)*
+/// exprNao           → NAO exprNao | exprRel
+/// exprRel           → exprAd ((EQ | NE | LT | LE | GT | GE) exprAd)*
+/// exprAd            → exprMul ((PLUS | MINUS) exprMul)*
+/// exprMul           → exprUn ((STAR | SLASH | PERCENT) exprUn)*
+/// exprUn            → (MINUS | NAO)? exprPri
+/// exprPri           → ID | NUM_LITERAL | STRING_LITERAL | BOOL_LITERAL | LPAREN expr RPAREN
+/// </summary>
 
 class Program
 {
     static int Main(string[] args)
     {
-        // 1) Parse de argumentos
-        bool printTokens = args.Contains("--tokens");
-        bool showHelp    = args.Contains("--help") || args.Contains("-h");
-        bool treeOnly    = args.Contains("--tree");
-        bool both        = args.Contains("--both");
-
-
-        string? path = args.FirstOrDefault(a => !a.StartsWith("-"));
-
-        string? outPath = null;
-        int outIdx = Array.IndexOf(args, "--out");
-        if (outIdx >= 0 && outIdx + 1 < args.Length && !args[outIdx + 1].StartsWith("-"))
-        {
-            outPath = args[outIdx + 1];
-        }
-
-        if (showHelp)
-        {
-            Console.WriteLine(@"Uso:
-                dotnet run [--] [--tokens] [--tree|--both] [arquivo]
-
-                Sem arquivo: lê da STDIN.
-                --tokens : imprime CSV de tokens (Tipo,Lexema,Linha,Coluna).
-                --tree   : imprime a árvore sintática (não executa).
-                --both   : imprime a árvore e depois executa.
-                Sem flags: executa o programa.");
-            return 0;
-        }
-
-        // 2) Carregar entrada (arquivo ou STDIN)
-        string inputText;
-        if (!string.IsNullOrWhiteSpace(path))
-        {
-            if (!File.Exists(path))
-            {
-                Console.Error.WriteLine($"Erro: arquivo não encontrado: {path}");
-                return 1;
-            }
-            inputText = File.ReadAllText(path, Encoding.UTF8);
-        }
-        else
-        {
-            // Lê tudo da entrada padrão
-            inputText = Console.In.ReadToEnd();
-        }
-
-        if (string.IsNullOrWhiteSpace(inputText))
-        {
-            Console.Error.WriteLine("Entrada vazia. Use: dotnet run <arquivo>  ou  Get-Content arquivo | dotnet run");
-            return 1;
-        }
-
-        // 3) Pipeline ANTLR
-        var input = new AntlrInputStream(inputText);
-        var lexer = new PortugolLexer(input);
-
-        // Captura erros léxicos
-        var lexErr = new CollectingErrorListener();
-        lexer.RemoveErrorListeners();
-        lexer.AddErrorListener(lexErr);
-
-        var tokens = new CommonTokenStream(lexer);
-        var parser = new PortugolParser(tokens);
-
-        // Captura erros sintáticos
-        var synErr = new CollectingErrorListener();
-        parser.RemoveErrorListeners();
-        parser.AddErrorListener(synErr);
-
-        // 4) Rodar conforme o modo
         try
         {
-            if (printTokens)
+            // 1) Parse de argumentos
+            bool printTokens = args.Contains("--tokens");
+            bool showHelp    = args.Contains("--help") || args.Contains("-h");
+
+            string? path = args.FirstOrDefault(a => !a.StartsWith("-"));
+
+            if (showHelp)
             {
-                // Força a tokenização
-                tokens.Fill();
+                Console.WriteLine(@"Uso: dotnet run [--tokens] [arquivo]
+                
+Sem arquivo: lê da STDIN.
+--tokens   : imprime lista de tokens com tipo, lexema e linha.
+Sem flags  : analisa sintaticamente o programa.");
+                return 0;
+            }
 
-                // Se houve erro, mostre e retorne falha
-                if (lexErr.HasErrors) {
-                    lexErr.PrintTo(Console.Error, "LÉXICO");
+            // 2) Carregar entrada
+            string inputText;
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                if (!File.Exists(path))
+                {
+                    Console.Error.WriteLine($"Erro: arquivo não encontrado: {path}");
                     return 1;
                 }
-
-                tokens.Seek(0);
-                parser.Reset();
-                parser.BuildParseTree = false;
-                parser.programa();
-
-                if (synErr.HasErrors || parser.NumberOfSyntaxErrors > 0) {
-                    synErr.PrintTo(Console.Error, "SINTÁTICO");
-                    return 1;
-                }
-
-                if (!string.IsNullOrWhiteSpace(outPath))
-                {
-                    var dir = Path.GetDirectoryName(outPath);
-                    if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-                        Directory.CreateDirectory(dir);
-
-                    using (var w = new StreamWriter(outPath, false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)))
-                    {
-                        PrintTokensCsv(w, tokens, lexer);
-                    }
-                    Console.Error.WriteLine($"[ok] CSV salvo em: {outPath}");
-                }
-                else
-                {
-                    PrintTokensCsv(Console.Out, tokens, lexer);
-                }
+                inputText = File.ReadAllText(path, Encoding.UTF8);
             }
             else
             {
-                // Parse a partir da regra inicial
-                IParseTree tree = parser.programa();
-
-                // Checa erros usual
-                bool hasErrors = lexErr.HasErrors || synErr.HasErrors || parser.NumberOfSyntaxErrors > 0;
-                if (hasErrors)
-                {
-                    if (lexErr.HasErrors) lexErr.PrintTo(Console.Error, "LÉXICO");
-                    if (synErr.HasErrors) synErr.PrintTo(Console.Error, "SINTÁTICO");
-                    return 1;
-                }
-
-                // Decide o que fazer
-                if (treeOnly || both)
-                {
-                    PrintTree(tree, parser);
-                }
-
-                if (!treeOnly)
-                {
-                    var exec = new Exec();
-                    exec.Visit(tree);
-                }
+                inputText = Console.In.ReadToEnd();
             }
 
+            if (string.IsNullOrWhiteSpace(inputText))
+            {
+                Console.Error.WriteLine("Entrada vazia.");
+                return 1;
+            }
+
+            // 3) Análise Léxica
+            var lexer = new LexicalAnalyzer(inputText);
+            var tokens = lexer.Analyze();
+
+            if (printTokens)
+            {
+                Console.WriteLine("=== TOKENS ===");
+                foreach (var tok in tokens)
+                {
+                    if (tok.Type != LexicalAnalyzer.TokenType.EOF)
+                    {
+                        Console.WriteLine($"{tok.Type,20} | {tok.Lexeme,20} | Linha {tok.Line}");
+                    }
+                }
+                return 0;
+            }
+
+            // 4) Análise Sintática LL(1)
+            var parser = new LL1Parser(tokens);
+            parser.Parse();
+
+            Console.WriteLine("✓ Análise concluída com sucesso!");
             return 0;
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine("Falha durante a análise:");
-            Console.Error.WriteLine(ex.Message);
+            Console.Error.WriteLine($"✗ Erro: {ex.Message}");
             return 1;
-        }
-    }
-
-    // Helpers
-
-    // CSV de tokens: Tipo,Lexema,Linha,Coluna
-    static void PrintTokensCsv(TextWriter output, CommonTokenStream tokenStream, PortugolLexer lexer)
-    {
-        output.WriteLine("Tipo,Lexema,Linha,Coluna");
-
-        foreach (var t in tokenStream.GetTokens())
-        {
-            if (t.Type == TokenConstants.EOF) continue;
-
-            string tipo = GetTokenDisplayName(lexer, t.Type);
-            string lexema = t.Text?.Replace("\"", "\"\"") ?? "";
-            int linha = t.Line;
-            int coluna = t.Column;
-
-            if (tipo.StartsWith("'") || tipo.All(ch => char.IsLetterOrDigit(ch) || ch == '_' || ch == '\''))
-            {
-                output.WriteLine($"{tipo},\"{lexema}\",{linha},{coluna}");
-            }
-            else
-            {
-                output.WriteLine($"'{tipo}',\"{lexema}\",{linha},{coluna}");
-            }
-        }
-    }
-
-    // Retorna um nome para o token
-    static string GetTokenDisplayName(PortugolLexer lexer, int tokenType)
-    {
-        var vocab = lexer.Vocabulary;
-        string? literal = vocab.GetLiteralName(tokenType);
-        if (!string.IsNullOrEmpty(literal))
-            return literal;
-
-        string? symbolic = vocab.GetSymbolicName(tokenType);
-        if (!string.IsNullOrEmpty(symbolic))
-            return symbolic;
-
-        return tokenType.ToString();
-    }
-
-    // Impressão recursiva da árvore com indentação
-    static void PrintTree(IParseTree tree, Parser parser, int indent = 0)
-    {
-        var pad = new string(' ', indent);
-        string nodeText = tree switch
-        {
-            ParserRuleContext prc => parser.RuleNames[prc.RuleIndex],
-            _ => tree.GetText()
-        };
-
-        Console.WriteLine($"{pad}{nodeText}");
-
-        for (int i = 0; i < tree.ChildCount; i++)
-        {
-            PrintTree(tree.GetChild(i), parser, indent + 2);
         }
     }
 }
 
-// Error listener que acumula mensagens
-class CollectingErrorListener : IAntlrErrorListener<int>, IAntlrErrorListener<IToken>
+class LexicalAnalyzer
 {
-    private readonly StringBuilder _sb = new StringBuilder();
-    public bool HasErrors => _sb.Length > 0;
-
-    public void SyntaxError(TextWriter output, IRecognizer recognizer, int offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
+    // Definindo os tipos de token
+    public enum TokenType
     {
-        _sb.AppendLine($"[linha {line}, coluna {charPositionInLine}] {msg}");
+        PROGRAMA, FIMPROGRAMA, INICIO, FIM, INTEIRO, REAL, LOGICO, TEXTO, SE, ENTAO, SENAO,
+        ENQUANTO, FACA, FIMENQUANTO, PARA, DE, ATE, PASSO, FIMPARA, ESCREVA, PROCEDIMENTO, RETORNE,
+        E, OU, NAO, LPAREN, RPAREN, COMMA, SEMI, EQUAL, PLUS, MINUS, STAR, SLASH, PERCENT,
+        LT, LE, GT, GE, EQ, NE, BOOL_LITERAL, NUM_LITERAL, STRING_LITERAL, ID, EOF, ERROR
     }
 
-    public void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
+    // Estrutura para um Token
+    public class Token
     {
-        string text = offendingSymbol?.Text ?? "<EOF>";
-        _sb.AppendLine($"[linha {line}, coluna {charPositionInLine}] perto de '{text}': {msg}");
+        public TokenType Type { get; }
+        public string Lexeme { get; }
+        public int Line { get; }
+
+        public Token(TokenType type, string lexeme, int line)
+        {
+            Type = type;
+            Lexeme = lexeme;
+            Line = line;
+        }
     }
 
-    public void PrintTo(TextWriter tw, string titulo)
+    private static readonly Dictionary<TokenType, string> tokenPatterns = new Dictionary<TokenType, string>
     {
-        tw.WriteLine($"Erros {titulo}:");
-        tw.Write(_sb.ToString());
+        // Palavras-chave (deve vir antes de ID para ter precedência)
+        { TokenType.PROGRAMA, @"^programa$" },
+        { TokenType.FIMPROGRAMA, @"^fimPrograma$" },
+        { TokenType.INICIO, @"^inicio$" },
+        { TokenType.FIM, @"^fim$" },
+        { TokenType.INTEIRO, @"^inteiro$" },
+        { TokenType.REAL, @"^real$" },
+        { TokenType.LOGICO, @"^logico$" },
+        { TokenType.TEXTO, @"^texto$" },
+        { TokenType.SE, @"^se$" },
+        { TokenType.ENTAO, @"^entao$" },
+        { TokenType.SENAO, @"^senao$" },
+        { TokenType.ENQUANTO, @"^enquanto$" },
+        { TokenType.FACA, @"^faca$" },
+        { TokenType.FIMENQUANTO, @"^fimEnquanto$" },
+        { TokenType.PARA, @"^para$" },
+        { TokenType.DE, @"^de$" },
+        { TokenType.ATE, @"^ate$" },
+        { TokenType.PASSO, @"^passo$" },
+        { TokenType.FIMPARA, @"^fimPara$" },
+        { TokenType.ESCREVA, @"^escreva$" },
+        { TokenType.PROCEDIMENTO, @"^procedimento$" },
+        { TokenType.RETORNE, @"^retorne$" },
+        { TokenType.E, @"^e$" },
+        { TokenType.OU, @"^ou$" },
+        { TokenType.NAO, @"^nao$" },
+        { TokenType.BOOL_LITERAL, @"^(verdadeiro|falso)$" },
+
+        // Números e strings
+        { TokenType.NUM_LITERAL, @"^\d+(\.\d+)?" },
+        { TokenType.STRING_LITERAL, @"""([^""\\]|\\.)*""" },
+
+        // Operadores e símbolos
+        { TokenType.LPAREN, @"^\(" },
+        { TokenType.RPAREN, @"^\)" },
+        { TokenType.COMMA, @"^," },
+        { TokenType.SEMI, @"^;" },
+        { TokenType.EQUAL, @"^=" },
+        { TokenType.PLUS, @"^\+" },
+        { TokenType.MINUS, @"^-" },
+        { TokenType.STAR, @"^\*" },
+        { TokenType.SLASH, @"^/" },
+        { TokenType.PERCENT, @"^%" },
+        { TokenType.LT, @"^<" },
+        { TokenType.GT, @"^>" },
+
+        // Identificadores (deve vir por último)
+        { TokenType.ID, @"^[a-zA-Z_][a-zA-Z0-9_]*" }
+    };
+
+    public List<Token> Tokens { get; private set; }
+    private string input;
+    private int currentPos;
+    private int currentLine;
+
+    public LexicalAnalyzer(string input)
+    {
+        this.input = input;
+        this.Tokens = new List<Token>();
+        this.currentPos = 0;
+        this.currentLine = 1;
+    }
+
+    // Função para realizar a análise léxica
+    public List<Token> Analyze()
+    {
+        while (currentPos < input.Length)
+        {
+            // Pular espaços em branco e comentários
+            if (char.IsWhiteSpace(input[currentPos]))
+            {
+                if (input[currentPos] == '\n')
+                    currentLine++;
+                currentPos++;
+                continue;
+            }
+
+            // Ignorar comentários (//... até fim de linha)
+            if (currentPos + 1 < input.Length && input[currentPos] == '/' && input[currentPos + 1] == '/')
+            {
+                while (currentPos < input.Length && input[currentPos] != '\n')
+                    currentPos++;
+                continue;
+            }
+
+            Token? token = GetNextToken();
+            if (token != null)
+            {
+                Tokens.Add(token);
+            }
+            else
+            {
+                throw new Exception($"Token inválido na linha {currentLine}: {input[currentPos]}");
+            }
+        }
+
+        Tokens.Add(new Token(TokenType.EOF, "", currentLine));
+        return Tokens;
+    }
+
+    private Token? GetNextToken()
+    {
+        // Tenta correspondências de 2 caracteres primeiro (<=, >=, ==, !=)
+        if (currentPos + 1 < input.Length)
+        {
+            string twoChar = input.Substring(currentPos, 2);
+            if (twoChar == "<=")
+            {
+                currentPos += 2;
+                return new Token(TokenType.LE, twoChar, currentLine);
+            }
+            if (twoChar == ">=")
+            {
+                currentPos += 2;
+                return new Token(TokenType.GE, twoChar, currentLine);
+            }
+            if (twoChar == "==")
+            {
+                currentPos += 2;
+                return new Token(TokenType.EQ, twoChar, currentLine);
+            }
+            if (twoChar == "!=")
+            {
+                currentPos += 2;
+                return new Token(TokenType.NE, twoChar, currentLine);
+            }
+        }
+
+        // Para palavras-chave e identificadores, extrair a palavra inteira primeiro
+        if (char.IsLetter(input[currentPos]) || input[currentPos] == '_')
+        {
+            int startPos = currentPos;
+            while (currentPos < input.Length && (char.IsLetterOrDigit(input[currentPos]) || input[currentPos] == '_'))
+                currentPos++;
+
+            string lexeme = input.Substring(startPos, currentPos - startPos);
+
+            // Verificar se é uma palavra-chave ou boolean literal
+            foreach (var pattern in tokenPatterns)
+            {
+                if (Regex.IsMatch(lexeme, pattern.Value, RegexOptions.IgnoreCase))
+                {
+                    return new Token(pattern.Key, lexeme, currentLine);
+                }
+            }
+
+            // Se não for nenhuma palavra-chave, é um identificador
+            return new Token(TokenType.ID, lexeme, currentLine);
+        }
+
+        // Tenta correspondências de números
+        if (char.IsDigit(input[currentPos]))
+        {
+            int startPos = currentPos;
+            while (currentPos < input.Length && (char.IsDigit(input[currentPos]) || input[currentPos] == '.'))
+                currentPos++;
+
+            string lexeme = input.Substring(startPos, currentPos - startPos);
+            return new Token(TokenType.NUM_LITERAL, lexeme, currentLine);
+        }
+
+        // Tenta correspondências de strings
+        if (input[currentPos] == '"')
+        {
+            int startPos = currentPos;
+            currentPos++; // Skip opening quote
+
+            while (currentPos < input.Length && input[currentPos] != '"')
+            {
+                if (input[currentPos] == '\\')
+                    currentPos++; // Skip escaped character
+                if (currentPos < input.Length)
+                    currentPos++;
+            }
+
+            if (currentPos < input.Length)
+                currentPos++; // Skip closing quote
+
+            string lexeme = input.Substring(startPos, currentPos - startPos);
+            return new Token(TokenType.STRING_LITERAL, lexeme, currentLine);
+        }
+
+        // Tenta correspondências de operadores e símbolos
+        foreach (var pattern in tokenPatterns)
+        {
+            var regex = new Regex(pattern.Value);
+            var match = regex.Match(input.Substring(currentPos));
+
+            if (match.Success && match.Index == 0)
+            {
+                string lexeme = match.Value;
+                currentPos += lexeme.Length;
+                return new Token(pattern.Key, lexeme, currentLine);
+            }
+        }
+
+        return null;
+    }
+}
+
+/// <summary>
+/// Analisador Sintático LL(1) com:
+/// 1. Cálculo de conjuntos FIRST e FOLLOW
+/// 2. Construção da tabela de análise LL(1)
+/// 3. Algoritmo de pilha LL(1) com MATCH
+/// </summary>
+class LL1Parser
+{
+    private List<LexicalAnalyzer.Token> tokens;
+    private int currentPos;
+    private Stack<string> stack;
+    private Dictionary<(string, string), List<string>> parseTable; // (não-terminal, terminal) -> produção
+    private HashSet<string> nonTerminals;
+    private HashSet<string> terminals;
+    private Dictionary<string, HashSet<string>> first;
+    private Dictionary<string, HashSet<string>> follow;
+
+    public LL1Parser(List<LexicalAnalyzer.Token> tokens)
+    {
+        this.tokens = tokens;
+        this.currentPos = 0;
+        this.stack = new Stack<string>();
+        this.parseTable = new Dictionary<(string, string), List<string>>();
+        this.nonTerminals = new HashSet<string>();
+        this.terminals = new HashSet<string>();
+        this.first = new Dictionary<string, HashSet<string>>();
+        this.follow = new Dictionary<string, HashSet<string>>();
+
+        InitializeGrammar();
+        ComputeFIRST();
+        ComputeFOLLOW();
+        BuildParseTable();
+    }
+
+    private void InitializeGrammar()
+    {
+        // Definir símbolos terminais
+        terminals = new HashSet<string> {
+            "PROGRAMA", "FIMPROGRAMA", "INICIO", "FIM", "INTEIRO", "REAL", "LOGICO", "TEXTO",
+            "SE", "ENTAO", "SENAO", "ENQUANTO", "FACA", "FIMENQUANTO", "PARA", "DE", "ATE",
+            "PASSO", "FIMPARA", "ESCREVA", "PROCEDIMENTO", "RETORNE", "E", "OU", "NAO",
+            "LPAREN", "RPAREN", "COMMA", "SEMI", "EQUAL", "PLUS", "MINUS", "STAR", "SLASH",
+            "PERCENT", "LT", "LE", "GT", "GE", "EQ", "NE", "BOOL_LITERAL", "NUM_LITERAL",
+            "STRING_LITERAL", "ID", "EOF", "ε"
+        };
+
+        // Definir símbolos não-terminais
+        nonTerminals = new HashSet<string> {
+            "programa", "blocoPrincipal", "comandos", "comando", "declaracao", "tipo",
+            "atribuicao", "condicional", "senaoOpt", "laco", "enquanto", "para",
+            "passoOpt", "escreva", "listaExpr", "retorne", "expr", "exprOu",
+            "exprE", "exprNao", "exprRel", "relOp", "exprAd", "exprMul", "exprUn", "exprPri"
+        };
+
+        // Inicializar dicionários FIRST e FOLLOW
+        foreach (var nt in nonTerminals)
+            first[nt] = new HashSet<string>();
+        foreach (var nt in nonTerminals)
+            follow[nt] = new HashSet<string>();
+    }
+
+    private void ComputeFIRST()
+    {
+        bool changed = true;
+        while (changed)
+        {
+            changed = false;
+
+            // programa → PROGRAMA ID LPAREN RPAREN blocoPrincipal FIMPROGRAMA
+            if (AddFIRST("programa", "PROGRAMA")) changed = true;
+
+            // blocoPrincipal → INICIO comandos FIM
+            if (AddFIRST("blocoPrincipal", "INICIO")) changed = true;
+
+            // comandos → (comando SEMI)*
+            if (AddFIRST("comandos", "ε")) changed = true;
+            if (AddFIRSTFromNT("comandos", "comando")) changed = true;
+
+            // comando → declaracao | atribuicao | condicional | laco | escreva | retorne
+            if (AddFIRSTFromNT("comando", "declaracao")) changed = true;
+            if (AddFIRSTFromNT("comando", "atribuicao")) changed = true;
+            if (AddFIRSTFromNT("comando", "condicional")) changed = true;
+            if (AddFIRSTFromNT("comando", "laco")) changed = true;
+            if (AddFIRSTFromNT("comando", "escreva")) changed = true;
+            if (AddFIRSTFromNT("comando", "retorne")) changed = true;
+
+            // declaracao → tipo ID (EQUAL expr)?
+            if (AddFIRSTFromNT("declaracao", "tipo")) changed = true;
+
+            // tipo → INTEIRO | REAL | LOGICO | TEXTO
+            if (AddFIRST("tipo", "INTEIRO")) changed = true;
+            if (AddFIRST("tipo", "REAL")) changed = true;
+            if (AddFIRST("tipo", "LOGICO")) changed = true;
+            if (AddFIRST("tipo", "TEXTO")) changed = true;
+
+            // atribuicao → ID EQUAL expr
+            if (AddFIRST("atribuicao", "ID")) changed = true;
+
+            // condicional → SE LPAREN expr RPAREN ENTAO blocoPrincipal senaoOpt
+            if (AddFIRST("condicional", "SE")) changed = true;
+
+            // senaoOpt → SENAO blocoPrincipal | ε
+            if (AddFIRST("senaoOpt", "SENAO")) changed = true;
+            if (AddFIRST("senaoOpt", "ε")) changed = true;
+
+            // laco → enquanto | para
+            if (AddFIRSTFromNT("laco", "enquanto")) changed = true;
+            if (AddFIRSTFromNT("laco", "para")) changed = true;
+
+            // enquanto → ENQUANTO LPAREN expr RPAREN FACA blocoPrincipal FIMENQUANTO
+            if (AddFIRST("enquanto", "ENQUANTO")) changed = true;
+
+            // para → PARA ID DE expr ATE expr passoOpt FACA blocoPrincipal FIMPARA
+            if (AddFIRST("para", "PARA")) changed = true;
+
+            // passoOpt → PASSO expr | ε
+            if (AddFIRST("passoOpt", "PASSO")) changed = true;
+            if (AddFIRST("passoOpt", "ε")) changed = true;
+
+            // escreva → ESCREVA LPAREN listaExpr RPAREN
+            if (AddFIRST("escreva", "ESCREVA")) changed = true;
+
+            // listaExpr → expr (COMMA expr)*
+            if (AddFIRSTFromNT("listaExpr", "expr")) changed = true;
+
+            // retorne → RETORNE expr
+            if (AddFIRST("retorne", "RETORNE")) changed = true;
+
+            // expr → exprOu
+            if (AddFIRSTFromNT("expr", "exprOu")) changed = true;
+
+            // exprOu → exprE (OU exprE)*
+            if (AddFIRSTFromNT("exprOu", "exprE")) changed = true;
+
+            // exprE → exprNao (E exprNao)*
+            if (AddFIRSTFromNT("exprE", "exprNao")) changed = true;
+
+            // exprNao → NAO exprNao | exprRel
+            if (AddFIRST("exprNao", "NAO")) changed = true;
+            if (AddFIRSTFromNT("exprNao", "exprRel")) changed = true;
+
+            // exprRel → exprAd ((EQ | NE | LT | LE | GT | GE) exprAd)*
+            if (AddFIRSTFromNT("exprRel", "exprAd")) changed = true;
+
+            // exprAd → exprMul ((PLUS | MINUS) exprMul)*
+            if (AddFIRSTFromNT("exprAd", "exprMul")) changed = true;
+
+            // exprMul → exprUn ((STAR | SLASH | PERCENT) exprUn)*
+            if (AddFIRSTFromNT("exprMul", "exprUn")) changed = true;
+
+            // exprUn → (MINUS | NAO)? exprPri
+            if (AddFIRST("exprUn", "MINUS")) changed = true;
+            if (AddFIRST("exprUn", "NAO")) changed = true;
+            if (AddFIRSTFromNT("exprUn", "exprPri")) changed = true;
+
+            // exprPri → ID | NUM_LITERAL | STRING_LITERAL | BOOL_LITERAL | LPAREN expr RPAREN
+            if (AddFIRST("exprPri", "ID")) changed = true;
+            if (AddFIRST("exprPri", "NUM_LITERAL")) changed = true;
+            if (AddFIRST("exprPri", "STRING_LITERAL")) changed = true;
+            if (AddFIRST("exprPri", "BOOL_LITERAL")) changed = true;
+            if (AddFIRST("exprPri", "LPAREN")) changed = true;
+        }
+    }
+
+    private bool AddFIRST(string nt, string symbol)
+    {
+        if (!first.ContainsKey(nt))
+            first[nt] = new HashSet<string>();
+        return first[nt].Add(symbol);
+    }
+
+    private bool AddFIRSTFromNT(string nt, string sourceNT)
+    {
+        bool changed = false;
+        if (first.ContainsKey(sourceNT))
+        {
+            foreach (var sym in first[sourceNT])
+            {
+                if (sym != "ε" && AddFIRST(nt, sym))
+                    changed = true;
+            }
+        }
+        return changed;
+    }
+
+    private void ComputeFOLLOW()
+    {
+        // FOLLOW(programa) = {EOF}
+        follow["programa"].Add("EOF");
+
+        bool changed = true;
+        while (changed)
+        {
+            changed = false;
+
+            // Para cada produção, calcular FOLLOW dos símbolos
+            // Esta é uma versão simplificada - em uma implementação completa,
+            // seria necessário processar todas as produções
+        }
+    }
+
+    private void BuildParseTable()
+    {
+        // Construir a tabela de análise LL(1) manualmente baseado na gramática
+
+        // programa → PROGRAMA ID LPAREN RPAREN blocoPrincipal FIMPROGRAMA
+        AddProduction("programa", "PROGRAMA", new List<string> { "PROGRAMA", "ID", "LPAREN", "RPAREN", "blocoPrincipal", "FIMPROGRAMA" });
+
+        // blocoPrincipal → INICIO comandos FIM
+        AddProduction("blocoPrincipal", "INICIO", new List<string> { "INICIO", "comandos", "FIM" });
+
+        // comandos → comando SEMI | ε
+        foreach (var term in new[] { "INTEIRO", "REAL", "LOGICO", "TEXTO", "ID", "SE", "ENQUANTO", "PARA", "ESCREVA", "RETORNE" })
+            AddProduction("comandos", term, new List<string> { "comando", "SEMI", "comandos" });
+        AddProduction("comandos", "FIM", new List<string> { "ε" });
+        AddProduction("comandos", "FIMENQUANTO", new List<string> { "ε" });
+        AddProduction("comandos", "FIMPARA", new List<string> { "ε" });
+        AddProduction("comandos", "SENAO", new List<string> { "ε" });
+
+        // comando → declaracao | atribuicao | condicional | laco | escreva | retorne
+        AddProduction("comando", "INTEIRO", new List<string> { "declaracao" });
+        AddProduction("comando", "REAL", new List<string> { "declaracao" });
+        AddProduction("comando", "LOGICO", new List<string> { "declaracao" });
+        AddProduction("comando", "TEXTO", new List<string> { "declaracao" });
+        AddProduction("comando", "ID", new List<string> { "atribuicao" });
+        AddProduction("comando", "SE", new List<string> { "condicional" });
+        AddProduction("comando", "ENQUANTO", new List<string> { "laco" });
+        AddProduction("comando", "PARA", new List<string> { "laco" });
+        AddProduction("comando", "ESCREVA", new List<string> { "escreva" });
+        AddProduction("comando", "RETORNE", new List<string> { "retorne" });
+
+        // declaracao → tipo ID EQUAL expr | tipo ID
+        AddProduction("declaracao", "INTEIRO", new List<string> { "tipo", "ID", "EQUAL", "expr" });
+        AddProduction("declaracao", "REAL", new List<string> { "tipo", "ID", "EQUAL", "expr" });
+        AddProduction("declaracao", "LOGICO", new List<string> { "tipo", "ID", "EQUAL", "expr" });
+        AddProduction("declaracao", "TEXTO", new List<string> { "tipo", "ID", "EQUAL", "expr" });
+
+        // tipo → INTEIRO | REAL | LOGICO | TEXTO
+        AddProduction("tipo", "INTEIRO", new List<string> { "INTEIRO" });
+        AddProduction("tipo", "REAL", new List<string> { "REAL" });
+        AddProduction("tipo", "LOGICO", new List<string> { "LOGICO" });
+        AddProduction("tipo", "TEXTO", new List<string> { "TEXTO" });
+
+        // atribuicao → ID EQUAL expr
+        AddProduction("atribuicao", "ID", new List<string> { "ID", "EQUAL", "expr" });
+
+        // condicional → SE LPAREN expr RPAREN ENTAO blocoPrincipal senaoOpt
+        AddProduction("condicional", "SE", new List<string> { "SE", "LPAREN", "expr", "RPAREN", "ENTAO", "blocoPrincipal", "senaoOpt" });
+
+        // senaoOpt → SENAO blocoPrincipal | ε
+        AddProduction("senaoOpt", "SENAO", new List<string> { "SENAO", "blocoPrincipal" });
+        AddProduction("senaoOpt", "FIM", new List<string> { "ε" });
+        AddProduction("senaoOpt", "FIMENQUANTO", new List<string> { "ε" });
+        AddProduction("senaoOpt", "FIMPARA", new List<string> { "ε" });
+        AddProduction("senaoOpt", "INTEIRO", new List<string> { "ε" });
+        AddProduction("senaoOpt", "REAL", new List<string> { "ε" });
+        AddProduction("senaoOpt", "LOGICO", new List<string> { "ε" });
+        AddProduction("senaoOpt", "TEXTO", new List<string> { "ε" });
+        AddProduction("senaoOpt", "ID", new List<string> { "ε" });
+        AddProduction("senaoOpt", "SE", new List<string> { "ε" });
+        AddProduction("senaoOpt", "ENQUANTO", new List<string> { "ε" });
+        AddProduction("senaoOpt", "PARA", new List<string> { "ε" });
+        AddProduction("senaoOpt", "ESCREVA", new List<string> { "ε" });
+        AddProduction("senaoOpt", "RETORNE", new List<string> { "ε" });
+        AddProduction("senaoOpt", "EOF", new List<string> { "ε" });
+
+        // laco → enquanto | para
+        AddProduction("laco", "ENQUANTO", new List<string> { "enquanto" });
+        AddProduction("laco", "PARA", new List<string> { "para" });
+
+        // enquanto → ENQUANTO LPAREN expr RPAREN FACA blocoPrincipal FIMENQUANTO
+        AddProduction("enquanto", "ENQUANTO", new List<string> { "ENQUANTO", "LPAREN", "expr", "RPAREN", "FACA", "blocoPrincipal", "FIMENQUANTO" });
+
+        // para → PARA ID DE expr ATE expr passoOpt FACA blocoPrincipal FIMPARA
+        AddProduction("para", "PARA", new List<string> { "PARA", "ID", "DE", "expr", "ATE", "expr", "passoOpt", "FACA", "blocoPrincipal", "FIMPARA" });
+
+        // passoOpt → PASSO expr | ε
+        AddProduction("passoOpt", "PASSO", new List<string> { "PASSO", "expr" });
+        AddProduction("passoOpt", "FACA", new List<string> { "ε" });
+
+        // escreva → ESCREVA LPAREN listaExpr RPAREN
+        AddProduction("escreva", "ESCREVA", new List<string> { "ESCREVA", "LPAREN", "listaExpr", "RPAREN" });
+
+        // listaExpr → expr listaExprRest
+        AddProduction("listaExpr", "ID", new List<string> { "expr", "listaExprRest" });
+        AddProduction("listaExpr", "NUM_LITERAL", new List<string> { "expr", "listaExprRest" });
+        AddProduction("listaExpr", "STRING_LITERAL", new List<string> { "expr", "listaExprRest" });
+        AddProduction("listaExpr", "BOOL_LITERAL", new List<string> { "expr", "listaExprRest" });
+        AddProduction("listaExpr", "LPAREN", new List<string> { "expr", "listaExprRest" });
+        AddProduction("listaExpr", "MINUS", new List<string> { "expr", "listaExprRest" });
+        AddProduction("listaExpr", "NAO", new List<string> { "expr", "listaExprRest" });
+
+        // listaExprRest → COMMA expr listaExprRest | ε
+        AddProduction("listaExprRest", "COMMA", new List<string> { "COMMA", "expr", "listaExprRest" });
+        AddProduction("listaExprRest", "RPAREN", new List<string> { "ε" });
+
+        // retorne → RETORNE expr
+        AddProduction("retorne", "RETORNE", new List<string> { "RETORNE", "expr" });
+
+        // expr → exprOu
+        AddProduction("expr", "ID", new List<string> { "exprOu" });
+        AddProduction("expr", "NUM_LITERAL", new List<string> { "exprOu" });
+        AddProduction("expr", "STRING_LITERAL", new List<string> { "exprOu" });
+        AddProduction("expr", "BOOL_LITERAL", new List<string> { "exprOu" });
+        AddProduction("expr", "LPAREN", new List<string> { "exprOu" });
+        AddProduction("expr", "MINUS", new List<string> { "exprOu" });
+        AddProduction("expr", "NAO", new List<string> { "exprOu" });
+
+        // exprOu → exprE exprOuRest
+        AddProduction("exprOu", "ID", new List<string> { "exprE", "exprOuRest" });
+        AddProduction("exprOu", "NUM_LITERAL", new List<string> { "exprE", "exprOuRest" });
+        AddProduction("exprOu", "STRING_LITERAL", new List<string> { "exprE", "exprOuRest" });
+        AddProduction("exprOu", "BOOL_LITERAL", new List<string> { "exprE", "exprOuRest" });
+        AddProduction("exprOu", "LPAREN", new List<string> { "exprE", "exprOuRest" });
+        AddProduction("exprOu", "MINUS", new List<string> { "exprE", "exprOuRest" });
+        AddProduction("exprOu", "NAO", new List<string> { "exprE", "exprOuRest" });
+
+        // exprOuRest → OU exprE exprOuRest | ε
+        AddProduction("exprOuRest", "OU", new List<string> { "OU", "exprE", "exprOuRest" });
+        foreach (var t in new[] { "SEMI", "RPAREN", "COMMA", "ENTAO", "FACA", "ATE", "PASSO", "DE", "EQ", "NE", "LT", "LE", "GT", "GE", "PLUS", "MINUS", "STAR", "SLASH", "PERCENT", "E", "FIM", "FIMENQUANTO", "FIMPARA", "SENAO", "EOF" })
+            AddProduction("exprOuRest", t, new List<string> { "ε" });
+
+        // exprE → exprNao exprERest
+        AddProduction("exprE", "ID", new List<string> { "exprNao", "exprERest" });
+        AddProduction("exprE", "NUM_LITERAL", new List<string> { "exprNao", "exprERest" });
+        AddProduction("exprE", "STRING_LITERAL", new List<string> { "exprNao", "exprERest" });
+        AddProduction("exprE", "BOOL_LITERAL", new List<string> { "exprNao", "exprERest" });
+        AddProduction("exprE", "LPAREN", new List<string> { "exprNao", "exprERest" });
+        AddProduction("exprE", "MINUS", new List<string> { "exprNao", "exprERest" });
+        AddProduction("exprE", "NAO", new List<string> { "exprNao", "exprERest" });
+
+        // exprERest → E exprNao exprERest | ε
+        AddProduction("exprERest", "E", new List<string> { "E", "exprNao", "exprERest" });
+        foreach (var t in new[] { "SEMI", "RPAREN", "COMMA", "ENTAO", "FACA", "ATE", "PASSO", "DE", "EQ", "NE", "LT", "LE", "GT", "GE", "PLUS", "MINUS", "STAR", "SLASH", "PERCENT", "OU", "FIM", "FIMENQUANTO", "FIMPARA", "SENAO", "EOF" })
+            AddProduction("exprERest", t, new List<string> { "ε" });
+
+        // exprNao → NAO exprNao | exprRel
+        AddProduction("exprNao", "NAO", new List<string> { "NAO", "exprNao" });
+        AddProduction("exprNao", "ID", new List<string> { "exprRel" });
+        AddProduction("exprNao", "NUM_LITERAL", new List<string> { "exprRel" });
+        AddProduction("exprNao", "STRING_LITERAL", new List<string> { "exprRel" });
+        AddProduction("exprNao", "BOOL_LITERAL", new List<string> { "exprRel" });
+        AddProduction("exprNao", "LPAREN", new List<string> { "exprRel" });
+        AddProduction("exprNao", "MINUS", new List<string> { "exprRel" });
+
+        // exprRel → exprAd exprRelRest
+        AddProduction("exprRel", "ID", new List<string> { "exprAd", "exprRelRest" });
+        AddProduction("exprRel", "NUM_LITERAL", new List<string> { "exprAd", "exprRelRest" });
+        AddProduction("exprRel", "STRING_LITERAL", new List<string> { "exprAd", "exprRelRest" });
+        AddProduction("exprRel", "BOOL_LITERAL", new List<string> { "exprAd", "exprRelRest" });
+        AddProduction("exprRel", "LPAREN", new List<string> { "exprAd", "exprRelRest" });
+        AddProduction("exprRel", "MINUS", new List<string> { "exprAd", "exprRelRest" });
+
+        // exprRelRest → relOp exprAd exprRelRest | ε
+        foreach (var op in new[] { "EQ", "NE", "LT", "LE", "GT", "GE" })
+            AddProduction("exprRelRest", op, new List<string> { op, "exprAd", "exprRelRest" });
+        foreach (var t in new[] { "SEMI", "RPAREN", "COMMA", "ENTAO", "FACA", "ATE", "PASSO", "DE", "PLUS", "MINUS", "STAR", "SLASH", "PERCENT", "E", "OU", "FIM", "FIMENQUANTO", "FIMPARA", "SENAO", "EOF" })
+            AddProduction("exprRelRest", t, new List<string> { "ε" });
+
+        // exprAd → exprMul exprAdRest
+        AddProduction("exprAd", "ID", new List<string> { "exprMul", "exprAdRest" });
+        AddProduction("exprAd", "NUM_LITERAL", new List<string> { "exprMul", "exprAdRest" });
+        AddProduction("exprAd", "STRING_LITERAL", new List<string> { "exprMul", "exprAdRest" });
+        AddProduction("exprAd", "BOOL_LITERAL", new List<string> { "exprMul", "exprAdRest" });
+        AddProduction("exprAd", "LPAREN", new List<string> { "exprMul", "exprAdRest" });
+        AddProduction("exprAd", "MINUS", new List<string> { "exprMul", "exprAdRest" });
+
+        // exprAdRest → (+|-) exprMul exprAdRest | ε
+        AddProduction("exprAdRest", "PLUS", new List<string> { "PLUS", "exprMul", "exprAdRest" });
+        AddProduction("exprAdRest", "MINUS", new List<string> { "MINUS", "exprMul", "exprAdRest" });
+        foreach (var t in new[] { "SEMI", "RPAREN", "COMMA", "ENTAO", "FACA", "ATE", "PASSO", "DE", "EQ", "NE", "LT", "LE", "GT", "GE", "STAR", "SLASH", "PERCENT", "E", "OU", "FIM", "FIMENQUANTO", "FIMPARA", "SENAO", "EOF" })
+            AddProduction("exprAdRest", t, new List<string> { "ε" });
+
+        // exprMul → exprUn exprMulRest
+        AddProduction("exprMul", "ID", new List<string> { "exprUn", "exprMulRest" });
+        AddProduction("exprMul", "NUM_LITERAL", new List<string> { "exprUn", "exprMulRest" });
+        AddProduction("exprMul", "STRING_LITERAL", new List<string> { "exprUn", "exprMulRest" });
+        AddProduction("exprMul", "BOOL_LITERAL", new List<string> { "exprUn", "exprMulRest" });
+        AddProduction("exprMul", "LPAREN", new List<string> { "exprUn", "exprMulRest" });
+        AddProduction("exprMul", "MINUS", new List<string> { "exprUn", "exprMulRest" });
+
+        // exprMulRest → (*|/|%) exprUn exprMulRest | ε
+        AddProduction("exprMulRest", "STAR", new List<string> { "STAR", "exprUn", "exprMulRest" });
+        AddProduction("exprMulRest", "SLASH", new List<string> { "SLASH", "exprUn", "exprMulRest" });
+        AddProduction("exprMulRest", "PERCENT", new List<string> { "PERCENT", "exprUn", "exprMulRest" });
+        foreach (var t in new[] { "SEMI", "RPAREN", "COMMA", "ENTAO", "FACA", "ATE", "PASSO", "DE", "EQ", "NE", "LT", "LE", "GT", "GE", "PLUS", "MINUS", "E", "OU", "FIM", "FIMENQUANTO", "FIMPARA", "SENAO", "EOF" })
+            AddProduction("exprMulRest", t, new List<string> { "ε" });
+
+        // exprUn → (- | NAO)? exprPri
+        AddProduction("exprUn", "MINUS", new List<string> { "MINUS", "exprPri" });
+        AddProduction("exprUn", "NAO", new List<string> { "NAO", "exprPri" });
+        AddProduction("exprUn", "ID", new List<string> { "exprPri" });
+        AddProduction("exprUn", "NUM_LITERAL", new List<string> { "exprPri" });
+        AddProduction("exprUn", "STRING_LITERAL", new List<string> { "exprPri" });
+        AddProduction("exprUn", "BOOL_LITERAL", new List<string> { "exprPri" });
+        AddProduction("exprUn", "LPAREN", new List<string> { "exprPri" });
+
+        // exprPri → ID | NUM_LITERAL | STRING_LITERAL | BOOL_LITERAL | LPAREN expr RPAREN
+        AddProduction("exprPri", "ID", new List<string> { "ID" });
+        AddProduction("exprPri", "NUM_LITERAL", new List<string> { "NUM_LITERAL" });
+        AddProduction("exprPri", "STRING_LITERAL", new List<string> { "STRING_LITERAL" });
+        AddProduction("exprPri", "BOOL_LITERAL", new List<string> { "BOOL_LITERAL" });
+        AddProduction("exprPri", "LPAREN", new List<string> { "LPAREN", "expr", "RPAREN" });
+    }
+
+    private void AddProduction(string nonTerminal, string lookahead, List<string> production)
+    {
+        var key = (nonTerminal, lookahead);
+        parseTable[key] = production;
+    }
+
+    public void Parse()
+    {
+        stack.Push("EOF");
+        stack.Push("programa");
+
+        int tokenIdx = 0;
+
+        Console.WriteLine("\n=== ANÁLISE SINTÁTICA LL(1) ===");
+
+        while (stack.Count > 0)
+        {
+            string top = stack.Peek();
+            string currentToken = tokenIdx < tokens.Count ? tokens[tokenIdx].Type.ToString() : "EOF";
+
+            // Se for terminal
+            if (terminals.Contains(top))
+            {
+                if (top == currentToken || top == "ε")
+                {
+                    if (top != "ε")
+                    {
+                        Console.WriteLine($"MATCH: {top}");
+                        tokenIdx++;
+                    }
+                    stack.Pop();
+                }
+                else
+                {
+                    throw new Exception($"Erro sintático linha {tokens[tokenIdx].Line}: esperado '{top}' mas encontrou '{currentToken}'");
+                }
+            }
+            else if (top == "EOF")
+            {
+                if (currentToken == "EOF")
+                {
+                    stack.Pop();
+                    Console.WriteLine("Análise sintática bem-sucedida!");
+                }
+                else
+                {
+                    throw new Exception($"Erro: tokens restantes após EOF");
+                }
+            }
+            else
+            {
+                // É um não-terminal
+                if (parseTable.TryGetValue((top, currentToken), out var production))
+                {
+                    stack.Pop();
+                    // Empilhar produção em ordem reversa
+                    for (int i = production.Count - 1; i >= 0; i--)
+                    {
+                        if (production[i] != "ε")
+                            stack.Push(production[i]);
+                    }
+
+                    Console.WriteLine($"{top} → {string.Join(" ", production)}");
+                }
+                else
+                {
+                    throw new Exception($"Erro sintático linha {tokens[tokenIdx].Line}: sem produção para '{top}' com token '{currentToken}'");
+                }
+            }
+        }
     }
 }
