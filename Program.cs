@@ -52,17 +52,42 @@ class Program
         {
             // 1) Parse de argumentos
             bool printTokens = args.Contains("--tokens");
+            bool printCsv    = args.Contains("--csv");
             bool showHelp    = args.Contains("--help") || args.Contains("-h");
+            bool verbose     = args.Contains("--verbose") || args.Contains("-v");
 
-            string? path = args.FirstOrDefault(a => !a.StartsWith("-"));
+            string? outPath = null;
+            int outIdx = Array.IndexOf(args, "--out");
+            if (outIdx >= 0 && outIdx + 1 < args.Length && !args[outIdx + 1].StartsWith("-"))
+                outPath = args[outIdx + 1];
+
+            // Procurar arquivo de entrada (ignora flags e seus argumentos)
+            string? path = null;
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (!args[i].StartsWith("-"))
+                {
+                    // Verificar se é argumento de uma flag anterior
+                    if (i > 0 && args[i-1] == "--out")
+                        continue;
+                    path = args[i];
+                    break;
+                }
+            }
 
             if (showHelp)
             {
-                Console.WriteLine(@"Uso: dotnet run [--tokens] [arquivo]
-                
+                Console.WriteLine(@"Uso: dotnet run [opções] [arquivo]
+
+Opções:
+  --tokens        : Imprime tokens (tipo, lexema, linha)
+  --csv           : Imprime tokens em formato CSV (tipo,lexema,linha,coluna)
+  --out <arquivo> : Salva saída CSV no arquivo
+  --verbose, -v   : Modo verbose com derivações
+  --help, -h      : Mostra esta ajuda
+
 Sem arquivo: lê da STDIN.
---tokens   : imprime lista de tokens com tipo, lexema e linha.
-Sem flags  : analisa sintaticamente o programa.");
+Sem flags  : analisa sintaticamente (modo normal).");
                 return 0;
             }
 
@@ -92,30 +117,86 @@ Sem flags  : analisa sintaticamente o programa.");
             var lexer = new LexicalAnalyzer(inputText);
             var tokens = lexer.Analyze();
 
-            if (printTokens)
+            if (printTokens || printCsv)
             {
-                Console.WriteLine("=== TOKENS ===");
-                foreach (var tok in tokens)
+                if (printCsv)
                 {
-                    if (tok.Type != LexicalAnalyzer.TokenType.EOF)
+                    PrintTokensCsv(Console.Out, tokens);
+                    
+                    if (!string.IsNullOrWhiteSpace(outPath))
                     {
-                        Console.WriteLine($"{tok.Type,20} | {tok.Lexeme,20} | Linha {tok.Line}");
+                        var dir = Path.GetDirectoryName(outPath);
+                        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                            Directory.CreateDirectory(dir);
+
+                        using (var w = new StreamWriter(outPath, false, new UTF8Encoding(false)))
+                        {
+                            PrintTokensCsv(w, tokens);
+                        }
+                        Console.Error.WriteLine($"✓ CSV salvo em: {outPath}");
                     }
+                }
+                else
+                {
+                    PrintTokensTable(Console.Out, tokens);
                 }
                 return 0;
             }
 
             // 4) Análise Sintática LL(1)
-            var parser = new LL1Parser(tokens);
+            var parser = new LL1Parser(tokens, verbose);
             parser.Parse();
 
-            Console.WriteLine("✓ Análise concluída com sucesso!");
+            Console.WriteLine("\n✓ Análise concluída com sucesso!");
             return 0;
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"✗ Erro: {ex.Message}");
             return 1;
+        }
+    }
+
+    // Imprime tokens em formato tabular
+    static void PrintTokensTable(TextWriter output, List<LexicalAnalyzer.Token> tokens)
+    {
+        output.WriteLine("=== TOKENS ===");
+        output.WriteLine($"{"TIPO",20} | {"LEXEMA",20} | {"LINHA",5}");
+        output.WriteLine(new string('-', 50));
+        
+        foreach (var tok in tokens)
+        {
+            if (tok.Type != LexicalAnalyzer.TokenType.EOF)
+            {
+                output.WriteLine($"{tok.Type,20} | {tok.Lexeme,20} | {tok.Line,5}");
+            }
+        }
+    }
+
+    // Imprime tokens em formato CSV
+    static void PrintTokensCsv(TextWriter output, List<LexicalAnalyzer.Token> tokens)
+    {
+        output.WriteLine("Tipo,Lexema,Linha,Coluna");
+        
+        int coluna = 0;
+        int linhaAtual = 1;
+        
+        foreach (var tok in tokens)
+        {
+            if (tok.Type == LexicalAnalyzer.TokenType.EOF)
+                continue;
+
+            if (tok.Line > linhaAtual)
+            {
+                linhaAtual = tok.Line;
+                coluna = 0;
+            }
+
+            string tipo = tok.Type.ToString();
+            string lexema = tok.Lexeme.Replace("\"", "\"\"");
+            
+            output.WriteLine($"{tipo},\"{lexema}\",{tok.Line},{coluna}");
+            coluna += tok.Lexeme.Length;
         }
     }
 }
