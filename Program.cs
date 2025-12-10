@@ -347,19 +347,27 @@ class LexicalAnalyzer
         return null;
     }
 }
-
 /// <summary>
 /// Analisador Sintático LL(1) com:
 /// 1. Cálculo de conjuntos FIRST e FOLLOW
 /// 2. Construção da tabela de análise LL(1)
 /// 3. Algoritmo de pilha LL(1) com MATCH
+/// 
+/// Gramática LL(1) simplificada para Portugol:
+/// 
+/// programa          → PROGRAMA ID LPAREN RPAREN blocoPrincipal FIMPROGRAMA
+/// blocoPrincipal    → INICIO comandos FIM
+/// comandos          → (comando)*
+/// comando           → (simples | estruturado) SEMI?
+/// simples           → declaracao | atribuicao | escreva | retorne
+/// estruturado       → condicional | enquanto | para
 /// </summary>
 class LL1Parser
 {
     private List<LexicalAnalyzer.Token> tokens;
     private int currentPos;
     private Stack<string> stack;
-    private Dictionary<(string, string), List<string>> parseTable; // (não-terminal, terminal) -> produção
+    private Dictionary<(string, string), List<string>> parseTable;
     private HashSet<string> nonTerminals;
     private HashSet<string> terminals;
     private Dictionary<string, HashSet<string>> first;
@@ -384,7 +392,6 @@ class LL1Parser
 
     private void InitializeGrammar()
     {
-        // Definir símbolos terminais
         terminals = new HashSet<string> {
             "PROGRAMA", "FIMPROGRAMA", "INICIO", "FIM", "INTEIRO", "REAL", "LOGICO", "TEXTO",
             "SE", "ENTAO", "SENAO", "ENQUANTO", "FACA", "FIMENQUANTO", "PARA", "DE", "ATE",
@@ -394,15 +401,15 @@ class LL1Parser
             "STRING_LITERAL", "ID", "EOF", "ε"
         };
 
-        // Definir símbolos não-terminais
         nonTerminals = new HashSet<string> {
-            "programa", "blocoPrincipal", "comandos", "comando", "declaracao", "tipo",
-            "atribuicao", "condicional", "senaoOpt", "laco", "enquanto", "para",
-            "passoOpt", "escreva", "listaExpr", "retorne", "expr", "exprOu",
-            "exprE", "exprNao", "exprRel", "relOp", "exprAd", "exprMul", "exprUn", "exprPri"
+            "programa", "blocoPrincipal", "comandos", "comando", "simples", "estruturado",
+            "declaracao", "tipo", "atribuicao", "condicional", "senaoOpt", 
+            "enquanto", "para", "passoOpt", "escreva", "listaExpr", "listaExprRest",
+            "retorne", "expr", "exprOu", "exprOuRest", "exprE", "exprERest", "exprNao", 
+            "exprRel", "exprRelRest", "exprAd", "exprAdRest", "exprMul", "exprMulRest", 
+            "exprUn", "exprPri"
         };
 
-        // Inicializar dicionários FIRST e FOLLOW
         foreach (var nt in nonTerminals)
             first[nt] = new HashSet<string>();
         foreach (var nt in nonTerminals)
@@ -416,94 +423,57 @@ class LL1Parser
         {
             changed = false;
 
-            // programa → PROGRAMA ID LPAREN RPAREN blocoPrincipal FIMPROGRAMA
             if (AddFIRST("programa", "PROGRAMA")) changed = true;
-
-            // blocoPrincipal → INICIO comandos FIM
             if (AddFIRST("blocoPrincipal", "INICIO")) changed = true;
-
-            // comandos → (comando SEMI)*
             if (AddFIRST("comandos", "ε")) changed = true;
             if (AddFIRSTFromNT("comandos", "comando")) changed = true;
 
-            // comando → declaracao | atribuicao | condicional | laco | escreva | retorne
-            if (AddFIRSTFromNT("comando", "declaracao")) changed = true;
-            if (AddFIRSTFromNT("comando", "atribuicao")) changed = true;
-            if (AddFIRSTFromNT("comando", "condicional")) changed = true;
-            if (AddFIRSTFromNT("comando", "laco")) changed = true;
-            if (AddFIRSTFromNT("comando", "escreva")) changed = true;
-            if (AddFIRSTFromNT("comando", "retorne")) changed = true;
+            if (AddFIRSTFromNT("comando", "simples")) changed = true;
+            if (AddFIRSTFromNT("comando", "estruturado")) changed = true;
 
-            // declaracao → tipo ID (EQUAL expr)?
+            if (AddFIRSTFromNT("simples", "declaracao")) changed = true;
+            if (AddFIRSTFromNT("simples", "atribuicao")) changed = true;
+            if (AddFIRSTFromNT("simples", "escreva")) changed = true;
+            if (AddFIRSTFromNT("simples", "retorne")) changed = true;
+
+            if (AddFIRSTFromNT("estruturado", "condicional")) changed = true;
+            if (AddFIRSTFromNT("estruturado", "enquanto")) changed = true;
+            if (AddFIRSTFromNT("estruturado", "para")) changed = true;
+
             if (AddFIRSTFromNT("declaracao", "tipo")) changed = true;
-
-            // tipo → INTEIRO | REAL | LOGICO | TEXTO
             if (AddFIRST("tipo", "INTEIRO")) changed = true;
             if (AddFIRST("tipo", "REAL")) changed = true;
             if (AddFIRST("tipo", "LOGICO")) changed = true;
             if (AddFIRST("tipo", "TEXTO")) changed = true;
 
-            // atribuicao → ID EQUAL expr
             if (AddFIRST("atribuicao", "ID")) changed = true;
-
-            // condicional → SE LPAREN expr RPAREN ENTAO blocoPrincipal senaoOpt
             if (AddFIRST("condicional", "SE")) changed = true;
-
-            // senaoOpt → SENAO blocoPrincipal | ε
             if (AddFIRST("senaoOpt", "SENAO")) changed = true;
             if (AddFIRST("senaoOpt", "ε")) changed = true;
 
-            // laco → enquanto | para
-            if (AddFIRSTFromNT("laco", "enquanto")) changed = true;
-            if (AddFIRSTFromNT("laco", "para")) changed = true;
-
-            // enquanto → ENQUANTO LPAREN expr RPAREN FACA blocoPrincipal FIMENQUANTO
             if (AddFIRST("enquanto", "ENQUANTO")) changed = true;
-
-            // para → PARA ID DE expr ATE expr passoOpt FACA blocoPrincipal FIMPARA
             if (AddFIRST("para", "PARA")) changed = true;
-
-            // passoOpt → PASSO expr | ε
             if (AddFIRST("passoOpt", "PASSO")) changed = true;
             if (AddFIRST("passoOpt", "ε")) changed = true;
 
-            // escreva → ESCREVA LPAREN listaExpr RPAREN
             if (AddFIRST("escreva", "ESCREVA")) changed = true;
-
-            // listaExpr → expr (COMMA expr)*
             if (AddFIRSTFromNT("listaExpr", "expr")) changed = true;
+            if (AddFIRST("listaExprRest", "COMMA")) changed = true;
+            if (AddFIRST("listaExprRest", "ε")) changed = true;
 
-            // retorne → RETORNE expr
             if (AddFIRST("retorne", "RETORNE")) changed = true;
-
-            // expr → exprOu
             if (AddFIRSTFromNT("expr", "exprOu")) changed = true;
-
-            // exprOu → exprE (OU exprE)*
             if (AddFIRSTFromNT("exprOu", "exprE")) changed = true;
-
-            // exprE → exprNao (E exprNao)*
             if (AddFIRSTFromNT("exprE", "exprNao")) changed = true;
-
-            // exprNao → NAO exprNao | exprRel
             if (AddFIRST("exprNao", "NAO")) changed = true;
             if (AddFIRSTFromNT("exprNao", "exprRel")) changed = true;
-
-            // exprRel → exprAd ((EQ | NE | LT | LE | GT | GE) exprAd)*
             if (AddFIRSTFromNT("exprRel", "exprAd")) changed = true;
-
-            // exprAd → exprMul ((PLUS | MINUS) exprMul)*
             if (AddFIRSTFromNT("exprAd", "exprMul")) changed = true;
-
-            // exprMul → exprUn ((STAR | SLASH | PERCENT) exprUn)*
             if (AddFIRSTFromNT("exprMul", "exprUn")) changed = true;
-
-            // exprUn → (MINUS | NAO)? exprPri
             if (AddFIRST("exprUn", "MINUS")) changed = true;
             if (AddFIRST("exprUn", "NAO")) changed = true;
             if (AddFIRSTFromNT("exprUn", "exprPri")) changed = true;
 
-            // exprPri → ID | NUM_LITERAL | STRING_LITERAL | BOOL_LITERAL | LPAREN expr RPAREN
             if (AddFIRST("exprPri", "ID")) changed = true;
             if (AddFIRST("exprPri", "NUM_LITERAL")) changed = true;
             if (AddFIRST("exprPri", "STRING_LITERAL")) changed = true;
@@ -535,135 +505,93 @@ class LL1Parser
 
     private void ComputeFOLLOW()
     {
-        // FOLLOW(programa) = {EOF}
         follow["programa"].Add("EOF");
-
-        bool changed = true;
-        while (changed)
-        {
-            changed = false;
-
-            // Para cada produção, calcular FOLLOW dos símbolos
-            // Esta é uma versão simplificada - em uma implementação completa,
-            // seria necessário processar todas as produções
-        }
     }
 
     private void BuildParseTable()
     {
-        // Construir a tabela de análise LL(1) manualmente baseado na gramática
-
-        // programa → PROGRAMA ID LPAREN RPAREN blocoPrincipal FIMPROGRAMA
+        // programa
         AddProduction("programa", "PROGRAMA", new List<string> { "PROGRAMA", "ID", "LPAREN", "RPAREN", "blocoPrincipal", "FIMPROGRAMA" });
 
-        // blocoPrincipal → INICIO comandos FIM
+        // blocoPrincipal
         AddProduction("blocoPrincipal", "INICIO", new List<string> { "INICIO", "comandos", "FIM" });
 
-        // comandos → comando SEMI | ε
+        // comandos → comando comandos | ε
         foreach (var term in new[] { "INTEIRO", "REAL", "LOGICO", "TEXTO", "ID", "SE", "ENQUANTO", "PARA", "ESCREVA", "RETORNE" })
-            AddProduction("comandos", term, new List<string> { "comando", "SEMI", "comandos" });
-        AddProduction("comandos", "FIM", new List<string> { "ε" });
-        AddProduction("comandos", "FIMENQUANTO", new List<string> { "ε" });
-        AddProduction("comandos", "FIMPARA", new List<string> { "ε" });
-        AddProduction("comandos", "SENAO", new List<string> { "ε" });
+            AddProduction("comandos", term, new List<string> { "comando", "comandos" });
+        foreach (var term in new[] { "FIM", "FIMENQUANTO", "FIMPARA", "SENAO", "EOF" })
+            AddProduction("comandos", term, new List<string> { "ε" });
 
-        // comando → declaracao | atribuicao | condicional | laco | escreva | retorne
-        AddProduction("comando", "INTEIRO", new List<string> { "declaracao" });
-        AddProduction("comando", "REAL", new List<string> { "declaracao" });
-        AddProduction("comando", "LOGICO", new List<string> { "declaracao" });
-        AddProduction("comando", "TEXTO", new List<string> { "declaracao" });
-        AddProduction("comando", "ID", new List<string> { "atribuicao" });
-        AddProduction("comando", "SE", new List<string> { "condicional" });
-        AddProduction("comando", "ENQUANTO", new List<string> { "laco" });
-        AddProduction("comando", "PARA", new List<string> { "laco" });
-        AddProduction("comando", "ESCREVA", new List<string> { "escreva" });
-        AddProduction("comando", "RETORNE", new List<string> { "retorne" });
+        // comando → simples SEMI | estruturado
+        foreach (var term in new[] { "INTEIRO", "REAL", "LOGICO", "TEXTO", "ID", "ESCREVA", "RETORNE" })
+            AddProduction("comando", term, new List<string> { "simples", "SEMI" });
+        foreach (var term in new[] { "SE", "ENQUANTO", "PARA" })
+            AddProduction("comando", term, new List<string> { "estruturado" });
 
-        // declaracao → tipo ID EQUAL expr | tipo ID
-        AddProduction("declaracao", "INTEIRO", new List<string> { "tipo", "ID", "EQUAL", "expr" });
-        AddProduction("declaracao", "REAL", new List<string> { "tipo", "ID", "EQUAL", "expr" });
-        AddProduction("declaracao", "LOGICO", new List<string> { "tipo", "ID", "EQUAL", "expr" });
-        AddProduction("declaracao", "TEXTO", new List<string> { "tipo", "ID", "EQUAL", "expr" });
+        // simples
+        foreach (var term in new[] { "INTEIRO", "REAL", "LOGICO", "TEXTO" })
+            AddProduction("simples", term, new List<string> { "declaracao" });
+        AddProduction("simples", "ID", new List<string> { "atribuicao" });
+        AddProduction("simples", "ESCREVA", new List<string> { "escreva" });
+        AddProduction("simples", "RETORNE", new List<string> { "retorne" });
 
-        // tipo → INTEIRO | REAL | LOGICO | TEXTO
+        // estruturado
+        AddProduction("estruturado", "SE", new List<string> { "condicional" });
+        AddProduction("estruturado", "ENQUANTO", new List<string> { "enquanto" });
+        AddProduction("estruturado", "PARA", new List<string> { "para" });
+
+        // declaracao
+        foreach (var term in new[] { "INTEIRO", "REAL", "LOGICO", "TEXTO" })
+            AddProduction("declaracao", term, new List<string> { "tipo", "ID", "EQUAL", "expr" });
+
+        // tipo
         AddProduction("tipo", "INTEIRO", new List<string> { "INTEIRO" });
         AddProduction("tipo", "REAL", new List<string> { "REAL" });
         AddProduction("tipo", "LOGICO", new List<string> { "LOGICO" });
         AddProduction("tipo", "TEXTO", new List<string> { "TEXTO" });
 
-        // atribuicao → ID EQUAL expr
+        // atribuicao
         AddProduction("atribuicao", "ID", new List<string> { "ID", "EQUAL", "expr" });
 
-        // condicional → SE LPAREN expr RPAREN ENTAO blocoPrincipal senaoOpt
+        // condicional
         AddProduction("condicional", "SE", new List<string> { "SE", "LPAREN", "expr", "RPAREN", "ENTAO", "blocoPrincipal", "senaoOpt" });
 
-        // senaoOpt → SENAO blocoPrincipal | ε
+        // senaoOpt
         AddProduction("senaoOpt", "SENAO", new List<string> { "SENAO", "blocoPrincipal" });
-        AddProduction("senaoOpt", "FIM", new List<string> { "ε" });
-        AddProduction("senaoOpt", "FIMENQUANTO", new List<string> { "ε" });
-        AddProduction("senaoOpt", "FIMPARA", new List<string> { "ε" });
-        AddProduction("senaoOpt", "INTEIRO", new List<string> { "ε" });
-        AddProduction("senaoOpt", "REAL", new List<string> { "ε" });
-        AddProduction("senaoOpt", "LOGICO", new List<string> { "ε" });
-        AddProduction("senaoOpt", "TEXTO", new List<string> { "ε" });
-        AddProduction("senaoOpt", "ID", new List<string> { "ε" });
-        AddProduction("senaoOpt", "SE", new List<string> { "ε" });
-        AddProduction("senaoOpt", "ENQUANTO", new List<string> { "ε" });
-        AddProduction("senaoOpt", "PARA", new List<string> { "ε" });
-        AddProduction("senaoOpt", "ESCREVA", new List<string> { "ε" });
-        AddProduction("senaoOpt", "RETORNE", new List<string> { "ε" });
-        AddProduction("senaoOpt", "EOF", new List<string> { "ε" });
+        foreach (var term in new[] { "FIM", "FIMENQUANTO", "FIMPARA", "INTEIRO", "REAL", "LOGICO", "TEXTO", "ID", "SE", "ENQUANTO", "PARA", "ESCREVA", "RETORNE", "EOF" })
+            AddProduction("senaoOpt", term, new List<string> { "ε" });
 
-        // laco → enquanto | para
-        AddProduction("laco", "ENQUANTO", new List<string> { "enquanto" });
-        AddProduction("laco", "PARA", new List<string> { "para" });
-
-        // enquanto → ENQUANTO LPAREN expr RPAREN FACA blocoPrincipal FIMENQUANTO
+        // enquanto
         AddProduction("enquanto", "ENQUANTO", new List<string> { "ENQUANTO", "LPAREN", "expr", "RPAREN", "FACA", "blocoPrincipal", "FIMENQUANTO" });
 
-        // para → PARA ID DE expr ATE expr passoOpt FACA blocoPrincipal FIMPARA
+        // para
         AddProduction("para", "PARA", new List<string> { "PARA", "ID", "DE", "expr", "ATE", "expr", "passoOpt", "FACA", "blocoPrincipal", "FIMPARA" });
 
-        // passoOpt → PASSO expr | ε
+        // passoOpt
         AddProduction("passoOpt", "PASSO", new List<string> { "PASSO", "expr" });
         AddProduction("passoOpt", "FACA", new List<string> { "ε" });
 
-        // escreva → ESCREVA LPAREN listaExpr RPAREN
+        // escreva
         AddProduction("escreva", "ESCREVA", new List<string> { "ESCREVA", "LPAREN", "listaExpr", "RPAREN" });
 
-        // listaExpr → expr listaExprRest
-        AddProduction("listaExpr", "ID", new List<string> { "expr", "listaExprRest" });
-        AddProduction("listaExpr", "NUM_LITERAL", new List<string> { "expr", "listaExprRest" });
-        AddProduction("listaExpr", "STRING_LITERAL", new List<string> { "expr", "listaExprRest" });
-        AddProduction("listaExpr", "BOOL_LITERAL", new List<string> { "expr", "listaExprRest" });
-        AddProduction("listaExpr", "LPAREN", new List<string> { "expr", "listaExprRest" });
-        AddProduction("listaExpr", "MINUS", new List<string> { "expr", "listaExprRest" });
-        AddProduction("listaExpr", "NAO", new List<string> { "expr", "listaExprRest" });
+        // listaExpr
+        foreach (var term in new[] { "ID", "NUM_LITERAL", "STRING_LITERAL", "BOOL_LITERAL", "LPAREN", "MINUS", "NAO" })
+            AddProduction("listaExpr", term, new List<string> { "expr", "listaExprRest" });
 
-        // listaExprRest → COMMA expr listaExprRest | ε
+        // listaExprRest
         AddProduction("listaExprRest", "COMMA", new List<string> { "COMMA", "expr", "listaExprRest" });
         AddProduction("listaExprRest", "RPAREN", new List<string> { "ε" });
 
-        // retorne → RETORNE expr
+        // retorne
         AddProduction("retorne", "RETORNE", new List<string> { "RETORNE", "expr" });
 
         // expr → exprOu
-        AddProduction("expr", "ID", new List<string> { "exprOu" });
-        AddProduction("expr", "NUM_LITERAL", new List<string> { "exprOu" });
-        AddProduction("expr", "STRING_LITERAL", new List<string> { "exprOu" });
-        AddProduction("expr", "BOOL_LITERAL", new List<string> { "exprOu" });
-        AddProduction("expr", "LPAREN", new List<string> { "exprOu" });
-        AddProduction("expr", "MINUS", new List<string> { "exprOu" });
-        AddProduction("expr", "NAO", new List<string> { "exprOu" });
+        foreach (var term in new[] { "ID", "NUM_LITERAL", "STRING_LITERAL", "BOOL_LITERAL", "LPAREN", "MINUS", "NAO" })
+            AddProduction("expr", term, new List<string> { "exprOu" });
 
         // exprOu → exprE exprOuRest
-        AddProduction("exprOu", "ID", new List<string> { "exprE", "exprOuRest" });
-        AddProduction("exprOu", "NUM_LITERAL", new List<string> { "exprE", "exprOuRest" });
-        AddProduction("exprOu", "STRING_LITERAL", new List<string> { "exprE", "exprOuRest" });
-        AddProduction("exprOu", "BOOL_LITERAL", new List<string> { "exprE", "exprOuRest" });
-        AddProduction("exprOu", "LPAREN", new List<string> { "exprE", "exprOuRest" });
-        AddProduction("exprOu", "MINUS", new List<string> { "exprE", "exprOuRest" });
-        AddProduction("exprOu", "NAO", new List<string> { "exprE", "exprOuRest" });
+        foreach (var term in new[] { "ID", "NUM_LITERAL", "STRING_LITERAL", "BOOL_LITERAL", "LPAREN", "MINUS", "NAO" })
+            AddProduction("exprOu", term, new List<string> { "exprE", "exprOuRest" });
 
         // exprOuRest → OU exprE exprOuRest | ε
         AddProduction("exprOuRest", "OU", new List<string> { "OU", "exprE", "exprOuRest" });
@@ -671,13 +599,8 @@ class LL1Parser
             AddProduction("exprOuRest", t, new List<string> { "ε" });
 
         // exprE → exprNao exprERest
-        AddProduction("exprE", "ID", new List<string> { "exprNao", "exprERest" });
-        AddProduction("exprE", "NUM_LITERAL", new List<string> { "exprNao", "exprERest" });
-        AddProduction("exprE", "STRING_LITERAL", new List<string> { "exprNao", "exprERest" });
-        AddProduction("exprE", "BOOL_LITERAL", new List<string> { "exprNao", "exprERest" });
-        AddProduction("exprE", "LPAREN", new List<string> { "exprNao", "exprERest" });
-        AddProduction("exprE", "MINUS", new List<string> { "exprNao", "exprERest" });
-        AddProduction("exprE", "NAO", new List<string> { "exprNao", "exprERest" });
+        foreach (var term in new[] { "ID", "NUM_LITERAL", "STRING_LITERAL", "BOOL_LITERAL", "LPAREN", "MINUS", "NAO" })
+            AddProduction("exprE", term, new List<string> { "exprNao", "exprERest" });
 
         // exprERest → E exprNao exprERest | ε
         AddProduction("exprERest", "E", new List<string> { "E", "exprNao", "exprERest" });
@@ -686,66 +609,47 @@ class LL1Parser
 
         // exprNao → NAO exprNao | exprRel
         AddProduction("exprNao", "NAO", new List<string> { "NAO", "exprNao" });
-        AddProduction("exprNao", "ID", new List<string> { "exprRel" });
-        AddProduction("exprNao", "NUM_LITERAL", new List<string> { "exprRel" });
-        AddProduction("exprNao", "STRING_LITERAL", new List<string> { "exprRel" });
-        AddProduction("exprNao", "BOOL_LITERAL", new List<string> { "exprRel" });
-        AddProduction("exprNao", "LPAREN", new List<string> { "exprRel" });
-        AddProduction("exprNao", "MINUS", new List<string> { "exprRel" });
+        foreach (var term in new[] { "ID", "NUM_LITERAL", "STRING_LITERAL", "BOOL_LITERAL", "LPAREN", "MINUS" })
+            AddProduction("exprNao", term, new List<string> { "exprRel" });
 
         // exprRel → exprAd exprRelRest
-        AddProduction("exprRel", "ID", new List<string> { "exprAd", "exprRelRest" });
-        AddProduction("exprRel", "NUM_LITERAL", new List<string> { "exprAd", "exprRelRest" });
-        AddProduction("exprRel", "STRING_LITERAL", new List<string> { "exprAd", "exprRelRest" });
-        AddProduction("exprRel", "BOOL_LITERAL", new List<string> { "exprAd", "exprRelRest" });
-        AddProduction("exprRel", "LPAREN", new List<string> { "exprAd", "exprRelRest" });
-        AddProduction("exprRel", "MINUS", new List<string> { "exprAd", "exprRelRest" });
+        foreach (var term in new[] { "ID", "NUM_LITERAL", "STRING_LITERAL", "BOOL_LITERAL", "LPAREN", "MINUS" })
+            AddProduction("exprRel", term, new List<string> { "exprAd", "exprRelRest" });
 
-        // exprRelRest → relOp exprAd exprRelRest | ε
+        // exprRelRest → (EQ|NE|LT|LE|GT|GE) exprAd exprRelRest | ε
         foreach (var op in new[] { "EQ", "NE", "LT", "LE", "GT", "GE" })
             AddProduction("exprRelRest", op, new List<string> { op, "exprAd", "exprRelRest" });
         foreach (var t in new[] { "SEMI", "RPAREN", "COMMA", "ENTAO", "FACA", "ATE", "PASSO", "DE", "PLUS", "MINUS", "STAR", "SLASH", "PERCENT", "E", "OU", "FIM", "FIMENQUANTO", "FIMPARA", "SENAO", "EOF" })
             AddProduction("exprRelRest", t, new List<string> { "ε" });
 
         // exprAd → exprMul exprAdRest
-        AddProduction("exprAd", "ID", new List<string> { "exprMul", "exprAdRest" });
-        AddProduction("exprAd", "NUM_LITERAL", new List<string> { "exprMul", "exprAdRest" });
-        AddProduction("exprAd", "STRING_LITERAL", new List<string> { "exprMul", "exprAdRest" });
-        AddProduction("exprAd", "BOOL_LITERAL", new List<string> { "exprMul", "exprAdRest" });
-        AddProduction("exprAd", "LPAREN", new List<string> { "exprMul", "exprAdRest" });
-        AddProduction("exprAd", "MINUS", new List<string> { "exprMul", "exprAdRest" });
+        foreach (var term in new[] { "ID", "NUM_LITERAL", "STRING_LITERAL", "BOOL_LITERAL", "LPAREN", "MINUS" })
+            AddProduction("exprAd", term, new List<string> { "exprMul", "exprAdRest" });
 
-        // exprAdRest → (+|-) exprMul exprAdRest | ε
+        // exprAdRest → (PLUS|MINUS) exprMul exprAdRest | ε
         AddProduction("exprAdRest", "PLUS", new List<string> { "PLUS", "exprMul", "exprAdRest" });
         AddProduction("exprAdRest", "MINUS", new List<string> { "MINUS", "exprMul", "exprAdRest" });
         foreach (var t in new[] { "SEMI", "RPAREN", "COMMA", "ENTAO", "FACA", "ATE", "PASSO", "DE", "EQ", "NE", "LT", "LE", "GT", "GE", "STAR", "SLASH", "PERCENT", "E", "OU", "FIM", "FIMENQUANTO", "FIMPARA", "SENAO", "EOF" })
             AddProduction("exprAdRest", t, new List<string> { "ε" });
 
         // exprMul → exprUn exprMulRest
-        AddProduction("exprMul", "ID", new List<string> { "exprUn", "exprMulRest" });
-        AddProduction("exprMul", "NUM_LITERAL", new List<string> { "exprUn", "exprMulRest" });
-        AddProduction("exprMul", "STRING_LITERAL", new List<string> { "exprUn", "exprMulRest" });
-        AddProduction("exprMul", "BOOL_LITERAL", new List<string> { "exprUn", "exprMulRest" });
-        AddProduction("exprMul", "LPAREN", new List<string> { "exprUn", "exprMulRest" });
-        AddProduction("exprMul", "MINUS", new List<string> { "exprUn", "exprMulRest" });
+        foreach (var term in new[] { "ID", "NUM_LITERAL", "STRING_LITERAL", "BOOL_LITERAL", "LPAREN", "MINUS" })
+            AddProduction("exprMul", term, new List<string> { "exprUn", "exprMulRest" });
 
-        // exprMulRest → (*|/|%) exprUn exprMulRest | ε
+        // exprMulRest → (STAR|SLASH|PERCENT) exprUn exprMulRest | ε
         AddProduction("exprMulRest", "STAR", new List<string> { "STAR", "exprUn", "exprMulRest" });
         AddProduction("exprMulRest", "SLASH", new List<string> { "SLASH", "exprUn", "exprMulRest" });
         AddProduction("exprMulRest", "PERCENT", new List<string> { "PERCENT", "exprUn", "exprMulRest" });
         foreach (var t in new[] { "SEMI", "RPAREN", "COMMA", "ENTAO", "FACA", "ATE", "PASSO", "DE", "EQ", "NE", "LT", "LE", "GT", "GE", "PLUS", "MINUS", "E", "OU", "FIM", "FIMENQUANTO", "FIMPARA", "SENAO", "EOF" })
             AddProduction("exprMulRest", t, new List<string> { "ε" });
 
-        // exprUn → (- | NAO)? exprPri
+        // exprUn → (MINUS|NAO)? exprPri
         AddProduction("exprUn", "MINUS", new List<string> { "MINUS", "exprPri" });
         AddProduction("exprUn", "NAO", new List<string> { "NAO", "exprPri" });
-        AddProduction("exprUn", "ID", new List<string> { "exprPri" });
-        AddProduction("exprUn", "NUM_LITERAL", new List<string> { "exprPri" });
-        AddProduction("exprUn", "STRING_LITERAL", new List<string> { "exprPri" });
-        AddProduction("exprUn", "BOOL_LITERAL", new List<string> { "exprPri" });
-        AddProduction("exprUn", "LPAREN", new List<string> { "exprPri" });
+        foreach (var term in new[] { "ID", "NUM_LITERAL", "STRING_LITERAL", "BOOL_LITERAL", "LPAREN" })
+            AddProduction("exprUn", term, new List<string> { "exprPri" });
 
-        // exprPri → ID | NUM_LITERAL | STRING_LITERAL | BOOL_LITERAL | LPAREN expr RPAREN
+        // exprPri
         AddProduction("exprPri", "ID", new List<string> { "ID" });
         AddProduction("exprPri", "NUM_LITERAL", new List<string> { "NUM_LITERAL" });
         AddProduction("exprPri", "STRING_LITERAL", new List<string> { "STRING_LITERAL" });
@@ -766,21 +670,19 @@ class LL1Parser
 
         int tokenIdx = 0;
 
-        Console.WriteLine("\n=== ANÁLISE SINTÁTICA LL(1) ===");
+        Console.WriteLine("\n=== ANÁLISE SINTÁTICA LL(1) ===\n");
 
         while (stack.Count > 0)
         {
             string top = stack.Peek();
             string currentToken = tokenIdx < tokens.Count ? tokens[tokenIdx].Type.ToString() : "EOF";
 
-            // Se for terminal
             if (terminals.Contains(top))
             {
                 if (top == currentToken || top == "ε")
                 {
                     if (top != "ε")
                     {
-                        Console.WriteLine($"MATCH: {top}");
                         tokenIdx++;
                     }
                     stack.Pop();
@@ -795,7 +697,6 @@ class LL1Parser
                 if (currentToken == "EOF")
                 {
                     stack.Pop();
-                    Console.WriteLine("Análise sintática bem-sucedida!");
                 }
                 else
                 {
@@ -804,18 +705,14 @@ class LL1Parser
             }
             else
             {
-                // É um não-terminal
                 if (parseTable.TryGetValue((top, currentToken), out var production))
                 {
                     stack.Pop();
-                    // Empilhar produção em ordem reversa
                     for (int i = production.Count - 1; i >= 0; i--)
                     {
                         if (production[i] != "ε")
                             stack.Push(production[i]);
                     }
-
-                    Console.WriteLine($"{top} → {string.Join(" ", production)}");
                 }
                 else
                 {
@@ -823,5 +720,7 @@ class LL1Parser
                 }
             }
         }
+
+        Console.WriteLine("✓ Análise concluída com sucesso!");
     }
 }
