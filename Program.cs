@@ -321,7 +321,7 @@ class LexicalAnalyzer
             }
             else
             {
-                throw new Exception($"Token inválido na linha {currentLine}: {input[currentPos]}");
+                throw new Exception($"Erro léxico na linha {currentLine}: {input[currentPos]}");
             }
         }
 
